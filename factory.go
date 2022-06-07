@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 )
@@ -34,9 +37,15 @@ type componentCatalog struct {
 	Components map[string]component `json:"components"`
 }
 
+type factoryDependencies struct {
+	Catalog    string   `yaml:"catalog"`
+	Components []string `yaml:"components"`
+}
+
 // factory represents a factory helm chart.
 type factory struct {
-	name string
+	name         string
+	Dependencies []factoryDependencies `yaml:"dependencies`
 }
 
 // getCatalog gets the component catalog.
@@ -57,30 +66,77 @@ func (f *factory) getCatalog(url string) (*componentCatalog, error) {
 	return catalog, nil
 }
 
-// addChart downloads the charts and adds it to the factory sub
-// charts.
-func (c *factory) addSubchart(repo, name, version string) error {
-	pull := action.NewPullWithOpts(action.WithConfig(&action.Configuration{}))
-	pull.Settings = cli.New()
-	pull.UntarDir = fmt.Sprintf("%s/chart/charts", c.path())
-	pull.Untar = true
-	url := fmt.Sprintf("%s/%s-%s.tgz", repo, name, version)
-	_, err := pull.Run(url)
-	if err != nil {
-		return err
+// addChart downloads the component charts and adds them to the
+// factory subcharts.
+func (f *factory) addSubcharts(catalog *componentCatalog) error {
+	for _, component := range catalog.Components {
+		pull := action.NewPullWithOpts(action.WithConfig(&action.Configuration{}))
+		pull.Settings = cli.New()
+		pull.UntarDir = fmt.Sprintf("%s/chart/charts", f.path())
+		pull.Untar = true
+		url := fmt.Sprintf("%s/%s-%s.tgz", component.Repo, component.Chart, component.Version)
+		_, err := pull.Run(url)
+		if err != nil {
+			return err
+		}
+		if err := os.Remove(fmt.Sprintf("%s/chart/charts/%s-%s.tgz", f.path(), component.Chart, component.Version)); err != nil {
+			return err
+		}
 	}
-	return os.Remove(fmt.Sprintf("%s/chart/charts/%s-%s.tgz", c.path(), name, version))
+
+	return nil
+}
+
+func (f *factory) addHooks(catalog *componentCatalog) error {
+	hookTemplate := `apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trustacks-{{.Kind}}
+  annotations:
+    "helm.sh/hook": {{.Kind}}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: trustacks-{{.Kind}}
+      image: {{.Image}}
+      env:
+      - name: CATALOG_MODE
+        value: hook
+      - name: HOOK_COMPONENT
+        value: {{.Component}}
+      - name: HOOK_KIND
+        value: {{.Kind}}`
+
+	t := template.Must(template.New("hook").Parse(hookTemplate))
+	type job struct {
+		Kind, Image, Component string
+	}
+	for name, component := range catalog.Components {
+		for _, kind := range component.Hooks {
+			var buf bytes.Buffer
+			if err := t.Execute(&buf, job{kind, catalog.HookSource, name}); err != nil {
+				return err
+			}
+			path := fmt.Sprintf("%s/chart/charts/%s/templates/%s-trustacks.io.yaml", f.path(), name, kind)
+			if err := ioutil.WriteFile(path, buf.Bytes(), 0666); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // path returns the filesystem path of the factory metadata.
-func (c *factory) path() string {
-	return filepath.Join(factoryRoot, c.name)
+func (f *factory) path() string {
+	return filepath.Join(factoryRoot, f.name)
 }
 
 // newFactory creates a new factory chart instance.
 func newFactory(name, source, tag string, cloneFunc func(string, bool, *git.CloneOptions) (*git.Repository, error)) (*factory, error) {
-	chart := &factory{name}
-	if _, err := cloneFunc(chart.path(), false, &git.CloneOptions{
+	factory := &factory{name: name}
+	if _, err := cloneFunc(factory.path(), false, &git.CloneOptions{
 		URL:           source,
 		Depth:         1,
 		SingleBranch:  true,
@@ -88,10 +144,17 @@ func newFactory(name, source, tag string, cloneFunc func(string, bool, *git.Clon
 	}); err != nil {
 		return nil, err
 	}
-	if err := os.Mkdir(fmt.Sprintf("%s/chart/charts", chart.path()), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(factory.path(), "chart", "charts"), 0755); err != nil {
 		return nil, err
 	}
-	return chart, nil
+	manifest, err := ioutil.ReadFile(filepath.Join(factory.path(), "factory.yaml"))
+	if err != nil {
+		return nil, err
+	}
+	if err := yaml.Unmarshal(manifest, factory); err != nil {
+		return nil, err
+	}
+	return factory, nil
 }
 
 // factory cli command flags.
@@ -111,13 +174,26 @@ var (
 		Use:   "install",
 		Short: "install a new software factory",
 		Run: func(cmd *cobra.Command, args []string) {
-			if _, err := newFactory(
+			factory, err := newFactory(
 				factoryInstallCmdName,
 				factoryInstallCmdSource,
 				factoryInstallCmdTag,
 				git.PlainClone,
-			); err != nil {
+			)
+			if err != nil {
 				log.Fatal(err)
+			}
+			for _, dep := range factory.Dependencies {
+				catalog, err := factory.getCatalog(dep.Catalog)
+				if err != nil {
+					log.Fatal("error fetching catalog: ", err)
+				}
+				if err := factory.addSubcharts(catalog); err != nil {
+					log.Fatal("error adding subcharts: ", err)
+				}
+				if err := factory.addHooks(catalog); err != nil {
+					log.Fatal("error adding hook templates: ", err)
+				}
 			}
 		},
 	}
