@@ -7,11 +7,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// factory cli command flags.
+// toolchain cli command flags.
 var (
-	factoryName   string
-	factorySource string
-	factoryTag    string
+	toolchainName   string
+	toolchainSource string
+	toolchainTag    string
 )
 
 // rootCmd is the cobra start command.
@@ -20,33 +20,33 @@ var rootCmd = &cobra.Command{
 	Short: "Trustacks is the workflow driven value steam delivery platform",
 }
 
-// factoryCmd contains subcommands for managing factories.
-var factoryCmd = &cobra.Command{
-	Use:   "factory",
-	Short: "manage software factories",
+// toolchainCmd contains subcommands for managing factories.
+var toolchainCmd = &cobra.Command{
+	Use:   "toolchain",
+	Short: "manage toolchains",
 }
 
-// factoryInstallCmd
-var factoryInstallCmd = &cobra.Command{
+// toolchainInstallCmd
+var toolchainInstallCmd = &cobra.Command{
 	Use:   "install",
-	Short: "install a software factory",
+	Short: "install a toolchain",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := installFactory(factoryName, factorySource, factoryTag, git.PlainClone); err != nil {
+		if err := installToolchain(toolchainName, toolchainSource, toolchainTag, git.PlainClone); err != nil {
 			fmt.Println(err)
 		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(factoryCmd)
-	factoryCmd.AddCommand(factoryInstallCmd)
+	rootCmd.AddCommand(toolchainCmd)
+	toolchainCmd.AddCommand(toolchainInstallCmd)
 
-	factoryInstallCmd.Flags().StringVar(&factoryName, "name", "", "name of the factory")
-	factoryInstallCmd.MarkFlagRequired("name")
+	toolchainInstallCmd.Flags().StringVar(&toolchainName, "name", "", "name of the toolchain")
+	toolchainInstallCmd.MarkFlagRequired("name")
 
-	factoryInstallCmd.Flags().StringVar(&factorySource, "source", "", "software factory git repository")
-	factoryInstallCmd.MarkFlagRequired("source")
+	toolchainInstallCmd.Flags().StringVar(&toolchainSource, "source", "", "software toolchain git repository")
+	toolchainInstallCmd.MarkFlagRequired("source")
 
-	factoryInstallCmd.Flags().StringVar(&factoryTag, "version", "", "software factory version")
-	factoryInstallCmd.MarkFlagRequired("ref")
+	toolchainInstallCmd.Flags().StringVar(&toolchainTag, "version", "", "software toolchain version")
+	toolchainInstallCmd.MarkFlagRequired("ref")
 }
