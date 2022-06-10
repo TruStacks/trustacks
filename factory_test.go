@@ -104,7 +104,6 @@ func TestFactoryAddSubcharts(t *testing.T) {
 			}
 		}
 	}))
-	factory := newTestFactory(t)
 	catalog := &componentCatalog{
 		Components: map[string]component{
 			"helloworld": {
@@ -115,6 +114,7 @@ func TestFactoryAddSubcharts(t *testing.T) {
 			},
 		},
 	}
+	factory := newTestFactory(t)
 	if err := factory.addSubcharts(catalog); err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,6 @@ func TestFactoryAddSubcharts(t *testing.T) {
 
 func TestAddHooks(t *testing.T) {
 	defer patchFactoryRoot(t)()
-	factory := newTestFactory(t)
 	catalog := &componentCatalog{
 		HookSource: "quay.io/trustacks/test-catalog:latest",
 		Components: map[string]component{
@@ -135,6 +134,7 @@ func TestAddHooks(t *testing.T) {
 			},
 		},
 	}
+	factory := newTestFactory(t)
 	cmd := exec.Command("cp", "-R", "testdata/helloworld", fmt.Sprintf("%s/chart/charts/helloworld", factory.path()))
 	if err := cmd.Run(); err != nil {
 		t.Fatal(err)
@@ -145,5 +145,38 @@ func TestAddHooks(t *testing.T) {
 	_, err := os.Stat(fmt.Sprintf("%s/chart/charts/helloworld/templates/post-install-trustacks.io.yaml", factory.path()))
 	if os.IsNotExist(err) {
 		t.Fatal("expected post install hook to exist")
+	}
+}
+
+func TestFactoryAddSubchartValues(t *testing.T) {
+	defer patchFactoryRoot(t)()
+	catalog := &componentCatalog{
+		HookSource: "quay.io/trustacks/test-catalog:latest",
+		Components: map[string]component{
+			"helloworld": {
+				Values: map[string]interface{}{
+					"username": "{{ .username }}",
+					"password": "{{ .password }}",
+				},
+			},
+		},
+	}
+	parameters := map[string]interface{}{
+		"username": "username",
+		"password": "password",
+	}
+	factory := newTestFactory(t)
+	if err := factory.addSubChartValues(catalog, parameters); err != nil {
+		t.Fatal(err)
+	}
+	values, err := ioutil.ReadFile(filepath.Join(factory.path(), "chart", "values.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedValues := `helloworld: {"password":"password","username":"username"}
+` // don't delete his newline or the test will break. ;-)
+
+	if string(values) != expectedValues {
+		t.Fatal("got an unexpected values output")
 	}
 }
