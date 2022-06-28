@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/spf13/cobra"
+	"github.com/trustacks/trustacks/pkg/toolchain"
 )
 
 // toolchain cli command flags.
@@ -12,13 +13,8 @@ var (
 	toolchainName   string
 	toolchainSource string
 	toolchainTag    string
+	toolchainConfig string
 )
-
-// rootCmd is the cobra start command.
-var rootCmd = &cobra.Command{
-	Use:   "tsctl",
-	Short: "Trustacks is the workflow driven value steam delivery platform",
-}
 
 // toolchainCmd contains subcommands for managing factories.
 var toolchainCmd = &cobra.Command{
@@ -31,22 +27,26 @@ var toolchainInstallCmd = &cobra.Command{
 	Use:   "install",
 	Short: "install a toolchain",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := installToolchain(toolchainName, toolchainSource, toolchainTag, git.PlainClone); err != nil {
+		if err := toolchain.Install(toolchainName, toolchainSource, toolchainTag, toolchainConfig, git.PlainClone); err != nil {
 			fmt.Println(err)
 		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(toolchainCmd)
 	toolchainCmd.AddCommand(toolchainInstallCmd)
 
 	toolchainInstallCmd.Flags().StringVar(&toolchainName, "name", "", "name of the toolchain")
 	toolchainInstallCmd.MarkFlagRequired("name")
 
-	toolchainInstallCmd.Flags().StringVar(&toolchainSource, "source", "", "software toolchain git repository")
+	toolchainInstallCmd.Flags().StringVar(&toolchainSource, "source", "", "toolchain repository")
 	toolchainInstallCmd.MarkFlagRequired("source")
 
-	toolchainInstallCmd.Flags().StringVar(&toolchainTag, "version", "", "software toolchain version")
-	toolchainInstallCmd.MarkFlagRequired("ref")
+	toolchainInstallCmd.Flags().StringVar(&toolchainTag, "version", "", "repository version")
+	toolchainInstallCmd.MarkFlagRequired("version")
+
+	toolchainInstallCmd.Flags().StringVar(&toolchainConfig, "config", "", "configuration file")
+	toolchainInstallCmd.MarkFlagRequired("config")
+
+	rootCmd.AddCommand(toolchainCmd)
 }

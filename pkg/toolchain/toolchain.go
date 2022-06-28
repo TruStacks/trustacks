@@ -1,4 +1,4 @@
-package main
+package toolchain
 
 import (
 	"bytes"
@@ -10,34 +10,45 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/manifoldco/promptui"
 	helmclient "github.com/mittwald/go-helm-client"
+	"github.com/trustacks/trustacks/pkg"
 	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 )
 
 // toolchainRoot is where software toolchain metadata is stored.
-var toolchainRoot = fmt.Sprintf("%s/%s/%s", os.Getenv("HOME"), ".trustacks", "toolchains")
+var toolchainRoot = filepath.Join(pkg.RootDir, "toolchains")
 
 // component represents a toolchain component.
 type component struct {
 	Repo       string                   `json:"repository"`
 	Chart      string                   `json:"chart"`
 	Version    string                   `json:"version"`
+	Values     string                   `json:"values"`
 	Hooks      []string                 `json:"hooks"`
-	Values     map[string]interface{}   `json:"values"`
 	Parameters []map[string]interface{} `json:"parameters"`
+}
+
+type componentCatalogConfigParameters struct {
+	Name    string `json:"name"`
+	Default string `json:"default"`
+}
+
+type componentCatalogConfig struct {
+	Parameters []componentCatalogConfigParameters `json:"parameters"`
 }
 
 // componentCatalog contains the component manifests.
 type componentCatalog struct {
-	HookSource string               `json:"hookSource"`
-	Components map[string]component `json:"components"`
+	HookSource string                  `json:"hookSource"`
+	Components map[string]component    `json:"components"`
+	Config     *componentCatalogConfig `json:"config"`
 }
 
 // toolchainDependencies contains the catalog and required components.
@@ -54,7 +65,7 @@ type toolchain struct {
 
 // getCatalog gets the component catalog.
 func (f *toolchain) getCatalog(url string) (*componentCatalog, error) {
-	resp, err := http.Get(url)
+	resp, err := http.Get(fmt.Sprintf("%s/.well-known/catalog-manifest", url))
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +83,9 @@ func (f *toolchain) getCatalog(url string) (*componentCatalog, error) {
 
 // addSubcharts downloads the component charts and adds them to the
 // toolchain subcharts.
-func (f *toolchain) addSubcharts(catalog *componentCatalog) error {
-	for _, component := range catalog.Components {
+func (f *toolchain) addSubcharts(components []string, catalog *componentCatalog) error {
+	for _, name := range components {
+		component := catalog.Components[name]
 		pull := action.NewPullWithOpts(action.WithConfig(&action.Configuration{}))
 		pull.Settings = cli.New()
 		pull.UntarDir = fmt.Sprintf("%s/chart/charts", f.path())
@@ -91,7 +103,7 @@ func (f *toolchain) addSubcharts(catalog *componentCatalog) error {
 }
 
 // addHooks creates the hook template file in the toolchain chart.
-func (f *toolchain) addHooks(catalog *componentCatalog) error {
+func (f *toolchain) addHooks(components []string, catalog *componentCatalog) error {
 	hookTemplate := `apiVersion: batch/v1
 kind: Job
 metadata:
@@ -117,7 +129,8 @@ spec:
 	type job struct {
 		Kind, Image, Component string
 	}
-	for name, component := range catalog.Components {
+	for _, name := range components {
+		component := catalog.Components[name]
 		for _, kind := range component.Hooks {
 			var buf bytes.Buffer
 			if err := t.Execute(&buf, job{kind, catalog.HookSource, name}); err != nil {
@@ -132,64 +145,33 @@ spec:
 	return nil
 }
 
-// parseParameters prompts for the component parameters.
-func (f *toolchain) parseParameters(catalog *componentCatalog) (map[string]interface{}, error) {
-	parameters := map[string]interface{}{}
-	for _, component := range catalog.Components {
-		for _, parameter := range component.Parameters {
-			templates := &promptui.PromptTemplates{
-				Prompt:  "{{ . }}: ",
-				Valid:   "{{ . }}: ",
-				Invalid: "{{ . }}: ",
-				Success: "{{ . }}: ",
-			}
-			var mask rune
-			if _, ok := parameter["mask"]; ok && parameter["mask"].(bool) {
-				mask = '*'
-			}
-			prompt := promptui.Prompt{
-				Templates: templates,
-				Label:     parameter["name"],
-				Mask:      mask,
-			}
-			result, err := prompt.Run()
-			if err != nil {
-				return nil, err
-			}
-			parameters[parameter["name"].(string)] = result
-		}
-	}
-	return parameters, nil
-}
-
 // addSubchartValues adds the subchart values to the helm values
 // file.
-func (f *toolchain) addSubChartValues(catalog *componentCatalog, parameters map[string]interface{}) error {
+func (f *toolchain) addSubChartValues(components []string, catalog *componentCatalog, parameters map[string]interface{}) error {
 	values, err := os.Create(filepath.Join(f.path(), "chart", "values.yaml"))
 	if err != nil {
 		return err
 	}
-	for name, component := range catalog.Components {
-		v, err := json.Marshal(component.Values)
-		if err != nil {
-			return err
-		}
-		t := template.Must(template.New("values").Funcs(sprig.FuncMap()).Parse(string(v)))
+	for _, name := range components {
+		component := catalog.Components[name]
+		t := template.Must(template.New("values").Funcs(sprig.FuncMap()).Parse(component.Values))
 		var buf bytes.Buffer
 		if err := t.Execute(&buf, parameters); err != nil {
 			return err
 		}
-		if _, err := values.Write([]byte(name + ": ")); err != nil {
+		if _, err := values.Write([]byte(name + ":\n")); err != nil {
 			return err
 		}
-		if _, err := values.Write([]byte(buf.String() + "\n")); err != nil {
-			return err
+		for _, line := range strings.Split(buf.String(), "\n") {
+			if _, err := values.WriteString(fmt.Sprintf("  %s\n", line)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-// install runs helm install and install the toolchain.
+// install runs helm install and installs the toolchain.
 func (f *toolchain) install() error {
 	name := fmt.Sprintf("toolchain-%s", f.name)
 	chartSpec := helmclient.ChartSpec{
@@ -247,28 +229,59 @@ func newToolchain(name, source, version string, cloneFunc func(string, bool, *gi
 	return toolchain, nil
 }
 
-// installToolchain installs the toolchain.
-func installToolchain(name, source, version string, cloneFunc func(string, bool, *git.CloneOptions) (*git.Repository, error)) error {
+type toolchainConfig struct {
+	Parameters map[string]interface{} `json:"parameters"`
+}
+
+func (config *toolchainConfig) join(parameters []componentCatalogConfigParameters) map[string]interface{} {
+	joined := make(map[string]interface{})
+	for _, param := range parameters {
+		if _, ok := config.Parameters[param.Name]; !ok {
+			if param.Default != "" {
+				joined[param.Name] = param.Default
+			}
+		} else {
+			joined[param.Name] = config.Parameters[param.Name]
+		}
+	}
+	return joined
+}
+
+// loadToolchainConfig loads the config file at the provided path.
+func loadToolchainConfig(path string) (*toolchainConfig, error) {
+	rawConfig, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var config *toolchainConfig
+	if err := yaml.Unmarshal(rawConfig, &config); err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+// Install installs the toolchain.
+func Install(name, source, version, configPath string, cloneFunc func(string, bool, *git.CloneOptions) (*git.Repository, error)) error {
+	config, err := loadToolchainConfig(configPath)
+	if err != nil {
+		return fmt.Errorf("error loading the toolchain config: %s", err)
+	}
 	toolchain, err := newToolchain(name, source, version, cloneFunc)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating the toolchian: %s", err)
 	}
 	for _, dep := range toolchain.Dependencies {
 		catalog, err := toolchain.getCatalog(dep.Catalog)
 		if err != nil {
 			return fmt.Errorf("error fetching catalog: %s", err)
 		}
-		parameters, err := toolchain.parseParameters(catalog)
-		if err != nil {
-			return fmt.Errorf("error parsing parameters: %s", err)
-		}
-		if err := toolchain.addSubChartValues(catalog, parameters); err != nil {
+		if err := toolchain.addSubChartValues(dep.Components, catalog, config.Parameters); err != nil {
 			return fmt.Errorf("error adding subchart values: %s", err)
 		}
-		if err := toolchain.addSubcharts(catalog); err != nil {
+		if err := toolchain.addSubcharts(dep.Components, catalog); err != nil {
 			return fmt.Errorf("error adding subcharts: %s", err)
 		}
-		if err := toolchain.addHooks(catalog); err != nil {
+		if err := toolchain.addHooks(dep.Components, catalog); err != nil {
 			return fmt.Errorf("error adding hook templates: %s", err)
 		}
 		if err := toolchain.install(); err != nil {

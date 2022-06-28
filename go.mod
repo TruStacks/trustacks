@@ -1,4 +1,4 @@
-module github.com/trustacks/cli
+module github.com/trustacks/trustacks
 
 go 1.18
 
@@ -8,9 +8,9 @@ require (
 )
 
 require (
+	filippo.io/age v1.0.0
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/go-git/go-git/v5 v5.4.2
-	github.com/manifoldco/promptui v0.9.0
 	github.com/mittwald/go-helm-client v0.11.1
 	github.com/spf13/cobra v1.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
@@ -32,7 +32,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chai2010/gettext-go v0.0.0-20160711120539-c6fed771bfd5 // indirect
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/containerd/containerd v1.6.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
