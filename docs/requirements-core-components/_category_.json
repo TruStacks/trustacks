@@ -1,0 +1,8 @@
+{
+  "label": "Core Components",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Every TSSF must include the set of core components:"
+  }
+}
