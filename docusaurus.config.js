@@ -8,7 +8,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'TruStacks Software Factory',
   tagline: 'Deploy a service with a push of a button',
-  url: 'https://trustacks.io',
+  url: 'https://trustacks.github.io',
   baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',

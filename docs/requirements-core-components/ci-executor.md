@@ -1,3 +1,8 @@
+---
+id: ci-executor
+title: CI Executor
+---
+
 # CI Executor
 
 The CI executor is responsible for orchestrating dependencies and running [Dagger](https://dagger.io/) plans that are provided by workflows. The CI executor must have the following capabilities:
