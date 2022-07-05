@@ -1,0 +1,23 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+	"github.com/trustacks/trustacks/pkg"
+)
+
+// rootCmd is the cobra start command.
+var rootCmd = &cobra.Command{
+	Use:   "tsctl",
+	Short: "Trustacks is the workflow driven value steam delivery platform",
+}
+
+func main() {
+	if err := os.Setenv("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), pkg.BinDir)); err != nil {
+		fmt.Printf("error setting path: %s\n", err)
+		return
+	}
+	rootCmd.Execute()
+}

@@ -1,4 +1,4 @@
-package main
+package toolchain
 
 import (
 	"fmt"
@@ -115,7 +115,7 @@ func TestToolchainAddSubcharts(t *testing.T) {
 		},
 	}
 	toolchain := newTestToolchain(t)
-	if err := toolchain.addSubcharts(catalog); err != nil {
+	if err := toolchain.addSubcharts([]string{"helloworld"}, catalog); err != nil {
 		t.Fatal(err)
 	}
 	_, err := os.Stat(fmt.Sprintf("%s/chart/charts/helloworld", toolchain.path()))
@@ -139,7 +139,7 @@ func TestAddHooks(t *testing.T) {
 	if err := cmd.Run(); err != nil {
 		t.Fatal(err)
 	}
-	if err := toolchain.addHooks(catalog); err != nil {
+	if err := toolchain.addHooks([]string{"helloworld"}, catalog); err != nil {
 		t.Fatal(err)
 	}
 	_, err := os.Stat(fmt.Sprintf("%s/chart/charts/helloworld/templates/post-install-trustacks.io.yaml", toolchain.path()))
@@ -154,10 +154,8 @@ func TestToolchainAddSubchartValues(t *testing.T) {
 		HookSource: "quay.io/trustacks/test-catalog:latest",
 		Components: map[string]component{
 			"helloworld": {
-				Values: map[string]interface{}{
-					"username": "{{ .username }}",
-					"password": "{{ .password }}",
-				},
+				Values: `username: username
+password: password`,
 			},
 		},
 	}
@@ -166,17 +164,50 @@ func TestToolchainAddSubchartValues(t *testing.T) {
 		"password": "password",
 	}
 	toolchain := newTestToolchain(t)
-	if err := toolchain.addSubChartValues(catalog, parameters); err != nil {
+	if err := toolchain.addSubChartValues([]string{"helloworld"}, catalog, parameters); err != nil {
 		t.Fatal(err)
 	}
 	values, err := ioutil.ReadFile(filepath.Join(toolchain.path(), "chart", "values.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedValues := `helloworld: {"password":"password","username":"username"}
+	expectedValues := `helloworld:
+  username: username
+  password: password
 ` // don't delete his newline or the test will break. ;-)
 
 	if string(values) != expectedValues {
 		t.Fatal("got an unexpected values output")
+	}
+}
+
+func TestLoadToolchainConfig(t *testing.T) {
+	config, err := loadToolchainConfig(filepath.Join("testdata", "config.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Parameters["test"].(string) != "value" {
+		t.Fatal("got an unexpected config parameter value")
+	}
+}
+
+func TestConfigJoinParameters(t *testing.T) {
+	catalogConfig := componentCatalogConfig{
+		Parameters: []componentCatalogConfigParameters{
+			{Name: "test", Default: ""},
+			{Name: "port", Default: "8080"},
+		},
+	}
+	config := &toolchainConfig{
+		Parameters: map[string]interface{}{
+			"test": "value",
+		},
+	}
+	joined := config.join(catalogConfig.Parameters)
+	if joined["test"].(string) != "value" {
+		t.Fatal("expected test value to be set")
+	}
+	if joined["port"].(string) != "8080" {
+		t.Fatal("expected default port value to be set")
 	}
 }
