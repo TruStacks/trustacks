@@ -93,11 +93,19 @@ func DownloadSops(url, bin string) error {
 
 // New creates a new encrypted secret.
 func New(name, secret string) error {
+	if err := Initialize(); err != nil {
+		return err
+	}
+	return encryptSecret(name, secret)
+}
+
+// Initialize the secrets assets.
+func Initialize() error {
 	if err := os.MkdirAll(secretsRoot, 0755); err != nil {
 		return err
 	}
 	if err := generateKey(); err != nil {
 		return err
 	}
-	return encryptSecret(name, secret)
+	return nil
 }

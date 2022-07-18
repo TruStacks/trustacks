@@ -15,6 +15,26 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// patchRoot changes the secrets root to a temporary
+// directory.
+//
+// call the return function in a deferral to return the secrets root
+// to the original state.
+func patchRootDir(t *testing.T) func() {
+	previousRootDir := pkg.RootDir
+	d, err := ioutil.TempDir("", "root")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg.RootDir = d
+	return func() {
+		if err := os.RemoveAll(d); err != nil {
+			t.Fatal(err)
+		}
+		pkg.RootDir = previousRootDir
+	}
+}
+
 // patchSecretsRoot changes the secrets root to a temporary
 // directory.
 //
@@ -36,7 +56,7 @@ func patchSecretsRoot(t *testing.T) func() {
 }
 
 func TestGenerateKey(t *testing.T) {
-	defer pkg.PatchRootDir(t)()
+	defer patchRootDir(t)()
 	if err := generateKey(); err != nil {
 		t.Fatal(err)
 	}
@@ -73,6 +93,7 @@ type testSecret struct {
 }
 
 func TestEncryptSecret(t *testing.T) {
+	defer patchRootDir(t)()
 	defer patchSecretsRoot(t)()
 	if err := generateKey(); err != nil {
 		t.Fatal(err)

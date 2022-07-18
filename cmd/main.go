@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{
 func main() {
 	if err := os.Setenv("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), pkg.BinDir)); err != nil {
 		fmt.Printf("error setting path: %s\n", err)
-		return
+		os.Exit(1)
 	}
 	rootCmd.Execute()
 }

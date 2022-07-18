@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	// sopsURL is the url of the sops binary.
 	sopsURL = "https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64"
 )
 
