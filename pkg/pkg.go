@@ -170,7 +170,7 @@ func InstallResourceComponents(resource, slug, basePath string) error {
 	var wg sync.WaitGroup
 	for _, component := range components {
 		wg.Add(1)
-		go func(name string, wg sync.WaitGroup) {
+		go func(name string, wg *sync.WaitGroup) {
 			values, err := ioutil.ReadFile(filepath.Join(basePath, "components", name, "override-values.yaml"))
 			if err != nil {
 				log.Fatalf("error reading override values: %s", err)
@@ -200,7 +200,7 @@ func InstallResourceComponents(resource, slug, basePath string) error {
 				log.Fatalf("error deploying '%s': %s", name, err)
 			}
 			wg.Done()
-		}(component.Name(), wg)
+		}(component.Name(), &wg)
 	}
 	wg.Wait()
 	return nil
