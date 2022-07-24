@@ -74,10 +74,14 @@ func GetCatalog(url string) (*ComponentCatalog, error) {
 	return catalog, nil
 }
 
-// AddSubcharts downloads the component charts and adds them to the
-// resource subcharts.
-func AddSubcharts(basePath string, components []string, catalog *ComponentCatalog) error {
+// AddComponents downloads the component charts and adds them to the
+// resource components.
+func AddComponents(basePath string, components []string, catalog *ComponentCatalog) error {
 	for _, name := range components {
+		// Check if the chart already exists.
+		if _, err := os.Stat(path.Join(basePath, "components", name)); !os.IsNotExist(err) {
+			continue
+		}
 		component := catalog.Components[name]
 		pull := action.NewPullWithOpts(action.WithConfig(&action.Configuration{}))
 		pull.Settings = cli.New()
@@ -160,9 +164,9 @@ func InstallResource(resource, slug, basePath string) error {
 	return err
 }
 
-// InstallResourceComponents installs the component helm charts.
-func InstallResourceComponents(resource, slug, basePath string) error {
-	slug = fmt.Sprintf("%s-%s", resource, slug)
+// InstallComponents installs the component helm charts.
+func InstallComponents(slug, basePath string) error {
+	slug = fmt.Sprintf("toolchain-%s", slug)
 	components, err := ioutil.ReadDir(path.Join(basePath, "components"))
 	if err != nil {
 		return err
