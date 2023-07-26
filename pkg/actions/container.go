@@ -13,27 +13,13 @@ import (
 
 var containerBuildAction = &plan.Action{
 	Name:  "containerBuild",
-	Image: "alpine",
+	Image: "busybox",
 	State: plan.OnDemandState,
-	InputArtifacts: []plan.Artifact{
-		plan.ApplicationDistArtifact,
-	},
 	OutputArtifacts: []plan.Artifact{
 		plan.ContainerImageArtifact,
 	},
 	Script: func(container *dagger.Container, _ map[string]interface{}, utils *plan.ActionUtilities) error {
-		container, appDistMount, err := utils.Mount(container, plan.ApplicationDistArtifact)
-		if err != nil {
-			return err
-		}
-		container = container.Directory("/src").DockerBuild(dagger.DirectoryDockerBuildOpts{
-			BuildArgs: []dagger.BuildArg{
-				{
-					Name:  "app_dist",
-					Value: appDistMount.Path("build"),
-				},
-			},
-		})
+		container = container.Directory("/src").DockerBuild()
 		return utils.ExportContainer(container, plan.ContainerImageArtifact)
 	},
 }
@@ -41,7 +27,7 @@ var containerBuildAction = &plan.Action{
 var containerCopyAction = &plan.Action{
 	Name:  "containerCopy",
 	Image: "alpine",
-	State: plan.StageState,
+	State: plan.PackageState,
 	InputArtifacts: []plan.Artifact{
 		plan.SemanticVersionArtifact,
 		plan.ContainerImageArtifact,
@@ -78,7 +64,7 @@ var containerCopyAction = &plan.Action{
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(containerBuildAction.Name, []engine.Fact{engine.ContainerfileExistFact}, nil)
+	engine.RegisterAdmissionResolver(containerBuildAction.Name, []engine.Fact{engine.ContainerfileIsMultiStageFact}, nil)
 	plan.RegisterAction(containerBuildAction)
 
 	engine.RegisterAdmissionResolver(

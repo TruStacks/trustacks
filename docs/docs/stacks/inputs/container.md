@@ -7,7 +7,7 @@ slug: /inputs/container
 
 Container inputs provide parameters for publishing and authenticating against container registries.
 
-# Fields
+## Fields
 
 | name | type | description |
 | - | - |-|

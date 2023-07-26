@@ -17,18 +17,18 @@ type SourceCollector struct {
 	patternExclusions mapset.Set[string]
 }
 
-func (collector *SourceCollector) Search(key string) []string {
-	if set, ok := collector.entries[key]; ok {
+func (collector *SourceCollector) Search(pattern string) []string {
+	if set, ok := collector.entries[pattern]; ok {
 		return set.ToSlice()
 	}
 	return nil
 }
 
-func (collector *SourceCollector) addEntry(key, value string) {
-	if _, ok := collector.entries[key]; !ok {
-		collector.entries[key] = mapset.NewSet[string]()
+func (collector *SourceCollector) addEntry(pattern, value string) {
+	if _, ok := collector.entries[pattern]; !ok {
+		collector.entries[pattern] = mapset.NewSet[string]()
 	}
-	collector.entries[key].Add(value)
+	collector.entries[pattern].Add(value)
 }
 
 func (collector *SourceCollector) addPatternMatch(patterns []PatternMatch) {
@@ -45,11 +45,13 @@ func (collector *SourceCollector) run(source string) error {
 			return err
 		}
 		for _, match := range collector.patternMatches.ToSlice() {
+			exclusions := collector.patternExclusions.ToSlice()
 			if match.Exclusions != nil {
-				for _, exclusion := range *match.Exclusions {
-					if strings.Contains(path, exclusion) {
-						return nil
-					}
+				exclusions = append(exclusions, *match.Exclusions...)
+			}
+			for _, exclusion := range exclusions {
+				if strings.Contains(path, exclusion) {
+					return nil
 				}
 			}
 			name := info.Name()

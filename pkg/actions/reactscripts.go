@@ -9,7 +9,6 @@ import (
 	"github.com/trustacks/pkg/plan"
 )
 
-// reactScriptsTestAction .
 var reactScriptsTestAction = &plan.Action{
 	Name:   "reactScriptsTest",
 	Image:  "node:alpine",
@@ -19,13 +18,12 @@ var reactScriptsTestAction = &plan.Action{
 		container = container.WithExec([]string{"apk", "add", "bash"})
 		container = container.WithExec([]string{"npm", "install"})
 		container = container.WithEnvVariable("CI", "true")
-		container = container.WithExec([]string{"npx", "react-scripts", "test", "--coverage"})
+		container = container.WithExec([]string{"npm", "test", "--coverage"})
 		_, err := container.Stdout(context.Background())
 		return err
 	},
 }
 
-// reactScriptsBuildAction .
 var reactScriptsBuildAction = &plan.Action{
 	Name:   "reactScriptsBuild",
 	Image:  "node:alpine",
@@ -37,12 +35,18 @@ var reactScriptsBuildAction = &plan.Action{
 	Script: func(container *dagger.Container, _ map[string]interface{}, utils *plan.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "bash"})
 		container = container.WithExec([]string{"npm", "install"})
-		container = container.WithExec([]string{"npx", "react-scripts", "build"})
+		container = container.WithExec([]string{"npm", "run", "build"})
 		return utils.Export(container, plan.ApplicationDistArtifact, filepath.Join("/src", "build"))
 	},
 }
 
 func init() {
+	engine.RegisterPatternMatches([]engine.PatternMatch{
+		{Kind: engine.FilePatternMatch, Pattern: `\.test.js`},
+		{Kind: engine.FilePatternMatch, Pattern: `\.test.jsx`},
+		{Kind: engine.FilePatternMatch, Pattern: `\.test.ts`},
+		{Kind: engine.FilePatternMatch, Pattern: `\.test.tsx`},
+	})
 	engine.RegisterAdmissionResolver(reactScriptsTestAction.Name, []engine.Fact{engine.ReactScriptsTestExistsFact}, nil)
 	plan.RegisterAction(reactScriptsTestAction)
 

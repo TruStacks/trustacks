@@ -11,6 +11,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.3
 	go.mozilla.org/sops/v3 v3.7.3
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

@@ -8,7 +8,6 @@ import (
 	"github.com/trustacks/pkg/plan"
 )
 
-// packageJsonVersion .
 var packageJsonVersion = &plan.Action{
 	Name:   "packageJsonVersion",
 	Image:  "node:alpine",

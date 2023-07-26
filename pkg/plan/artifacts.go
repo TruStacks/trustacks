@@ -2,6 +2,7 @@ package plan
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,12 +14,8 @@ import (
 type Artifact int
 
 const (
-	// ApplicationDist is a ditributable build of an
-	// application.
 	ApplicationDistArtifact Artifact = iota
-	// ContainerImage is an OCI compliant image tar.
 	ContainerImageArtifact
-	// SemanticVersionArtifact is a semantic version string.
 	SemanticVersionArtifact
 )
 
@@ -50,9 +47,11 @@ func (as *ArtifactStore) ExportContainer(container *dagger.Container, artifact A
 	return nil
 }
 
+var ErrArtifactNotFound = errors.New("artifact does not exists")
+
 func (as *ArtifactStore) Mount(container *dagger.Container, artifact Artifact) (*dagger.Container, *artifactMount, error) {
 	if _, ok := as.artifacts[artifact]; !ok {
-		return nil, nil, fmt.Errorf("artifact with id '%d' does not exists", artifact)
+		return nil, nil, ErrArtifactNotFound
 	}
 	mount, err := newArtifactMount(artifact)
 	if err != nil {
@@ -67,7 +66,7 @@ func (as *ArtifactStore) Mount(container *dagger.Container, artifact Artifact) (
 
 func (as *ArtifactStore) MountImage(container *dagger.Container, artifact Artifact) (*dagger.Container, *artifactMount, error) {
 	if _, ok := as.artifacts[artifact]; !ok {
-		return nil, nil, fmt.Errorf("artifact with id '%d' does not exists", artifact)
+		return nil, nil, ErrArtifactNotFound
 	}
 	mount, err := newArtifactMount(artifact)
 	if err != nil {

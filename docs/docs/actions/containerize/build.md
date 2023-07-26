@@ -5,17 +5,9 @@ slug: /actions/containerize/build
 
 # Containerize - Build
 
-The build action builds an OCI compliant image from the application Dockerfile.
+The build action builds an [OCI compliant](https://opencontainers.org/) image from the application Dockerfile or Containerfile.
 
-:::info
-This action supports both Dockerfile and Containerfile container build files.
-:::
-
-### Admission Criteria
-
-- A `Dockerfile` or `Containerfile` file exists in the root of the source directory.
-
-### Build Artifact
+<!-- ### Build Artifact
 
 The containerize action takes a build input artifact. The build artifact contains the built application assets. 
 
@@ -29,22 +21,24 @@ ARG app_dist
 COPY $app_dist/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 CMD ["nginx", "-g", "daemon off;"]
-```
+``` -->
+
+### Stack Inputs
+
+- [ContainerRegistry](/inputs/container#fields)
+- [ContainerRegistryUsername](/inputs/container#fields)
+- [ContainerRegistryPassword](/inputs/container#fields)
 
 ### Artifacts
 
-#### Inputs:
+#### Input:
 
 |Name|Type|Description|
 |-|-|-|
 |dist|dir|Build artifacts from the application build action|
 
-#### Outputs:
+#### Output:
 
 |Name|Type|Description|
 |-|-|-|
 |image.tar|file|OCI compliant container image tar|
-
-#### Reports:
-
-N/A

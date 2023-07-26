@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"dagger.io/dagger"
 	"github.com/charmbracelet/log"
@@ -12,7 +13,7 @@ import (
 
 type ActionPlan struct {
 	Actions     []string               `json:"actions"`
-	InputFields map[string]interface{} `json:"inputs"`
+	InputFields map[string]interface{} `json:"inputs,omitempty"`
 	id          string
 	artifacts   *ArtifactStore
 }
@@ -80,7 +81,7 @@ func (ap *ActionPlan) Schedule() (map[State]mapset.Set[*Action], error) {
 				}
 			}
 			if !inputActionMatched {
-				err := fmt.Errorf("one or more outputs from on-demand action '%s' could not be matched to an action in an activity state. this action will be excluded from the action plan", action.Name)
+				err := fmt.Errorf("one or more outputs from on-demand action '%s' could not be matched to an action in a fixed activity state. this action will be excluded from the action plan", action.Name)
 				log.Warn("", "err", err)
 				schedule[OnDemandState].Remove(action)
 			}
@@ -121,10 +122,10 @@ func (ap *ActionPlan) runAction(source string, action *Action, client *dagger.Cl
 	return false, action.Script(container, ap.InputFields, newActionUtilities(client, ap.artifacts))
 }
 
-// NewActionPlan .
 func NewActionPlan(client *dagger.Client) *ActionPlan {
 	plan := &ActionPlan{
 		InputFields: make(map[string]interface{}),
+		id:          time.Now().Format(time.RFC3339),
 	}
 	if client != nil {
 		plan.artifacts = newArtifactStore(client)
@@ -132,7 +133,6 @@ func NewActionPlan(client *dagger.Client) *ActionPlan {
 	return plan
 }
 
-// Run .
 func Run(source, spec string, client *dagger.Client, states []State) error {
 	ap := NewActionPlan(client)
 	defer func() {
@@ -178,10 +178,8 @@ func Run(source, spec string, client *dagger.Client, states []State) error {
 	return nil
 }
 
-// actions .
 var registeredActions = map[string]*Action{}
 
-// RegisterAction .
 func RegisterAction(action *Action) {
 	registeredActions[action.Name] = action
 }

@@ -8,7 +8,7 @@ sidebar_position: 1
 
 A stack is a representation of the software delivery tooling available during action plan execution.
 
-Stacks contain "out-of-band" application configuration parameters that cannot be securely or reliably derived from a source code repository.
+Stacks contain external configuration parameters that cannot be securely or reliably discovered from a source code repository.
 
 ## Input Fields
 
@@ -18,13 +18,13 @@ Stacks parameters are provided as input fields in the [Action Plan](/action-plan
 Parameters defined in the stack configuration are only used when needed by a given action plan.
 :::
 
-## Stack Configuration File
+## Inputs File
 
-The `stack.json` is a JSON formatted configuration file that contains all of the stack inputs for a given environment.
+The `inputs.json` is a JSON formatted configuration file that contains all of the stack inputs for a given environment.
 
 ### Encryption
 
-[Stackfiles](#stackfile) contain secrets such as kuebconfigs, docker credentials, and other service credentials. The Stackfile must be encrypted at rest using [sops](https://github.com/getsops/sops) with an [age](https://github.com/FiloSottile/age) key. 
+The inputs file contain secrets such as kuebconfigs, docker credentials, and other service credentials. The Stackfile must be encrypted at rest using [sops](https://github.com/getsops/sops) with an [age](https://github.com/FiloSottile/age) key. 
 
 Use the links below to install sops and age:
 

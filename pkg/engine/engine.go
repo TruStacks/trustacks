@@ -9,7 +9,6 @@ type Engine struct {
 	sourceCollector *SourceCollector
 }
 
-// CreateActionPlan .
 func (engine *Engine) CreateActionPlan(source string) (string, error) {
 	facts := mapset.NewSet[Fact]()
 	actionPlan := plan.NewActionPlan(nil)
@@ -40,7 +39,7 @@ func (engine *Engine) runSourceCollector(source string) error {
 }
 
 func New() *Engine {
-	return &Engine{sourceCollector: newSourceCollector()}
+	return &Engine{sourceCollector: collector}
 }
 
 var admissionResolvers = map[string]AdmissionResolver{}
@@ -50,7 +49,6 @@ type AdmissionResolver struct {
 	userInputs []string
 }
 
-// RegisterAdmissionTest .
 func RegisterAdmissionResolver(name string, criteria []Fact, userInputs []string) {
 	admissionResolvers[name] = AdmissionResolver{criteria, userInputs}
 }
