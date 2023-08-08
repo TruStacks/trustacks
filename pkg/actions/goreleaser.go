@@ -11,7 +11,7 @@ import (
 var goreleaserPreRelease = &plan.Action{
 	Name:   "goreleaserBuild",
 	Image:  "golang:alpine",
-	State:  plan.StageState,
+	Stage:  plan.StageStage,
 	Caches: []string{"/go/pkg/mod"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "curl", "git", "docker-cli"})
@@ -24,6 +24,14 @@ var goreleaserPreRelease = &plan.Action{
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(goreleaserPreRelease.Name, []engine.Fact{engine.GoreleaserExistsFact}, nil)
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        goreleaserPreRelease.Name,
+			DisplayName: "GoReleaser Pre-Release",
+			Description: "Run goreleaser with the prerelease flag.",
+		},
+		[]engine.Fact{engine.GoreleaserExistsFact},
+		nil,
+	)
 	plan.RegisterAction(goreleaserPreRelease)
 }

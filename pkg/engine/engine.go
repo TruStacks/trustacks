@@ -9,14 +9,14 @@ type Engine struct {
 	sourceCollector *SourceCollector
 }
 
-func (engine *Engine) CreateActionPlan(source string) (string, error) {
+func (engine *Engine) CreateActionPlan(source string, simple bool) (string, error) {
 	facts := mapset.NewSet[Fact]()
 	actionPlan := plan.NewActionPlan(nil)
 	if err := engine.runSourceCollector(source); err != nil {
 		return "", err
 	}
 	ruleset.gatherFacts(source, engine.sourceCollector, facts, nil)
-	for name, resolver := range admissionResolvers {
+	for _, resolver := range admissionResolvers {
 		pass := true
 		for _, fact := range resolver.criteria {
 			if !facts.Contains(fact) {
@@ -24,7 +24,12 @@ func (engine *Engine) CreateActionPlan(source string) (string, error) {
 			}
 		}
 		if pass {
-			actionPlan.AddAction(name, resolver.userInputs)
+			spec := resolver.spec
+			if simple {
+				spec.Description = ""
+				spec.DisplayName = ""
+			}
+			actionPlan.AddAction(spec, resolver.userInputs)
 		}
 	}
 	actionPlanJson, err := actionPlan.ToJson()
@@ -42,15 +47,16 @@ func New() *Engine {
 	return &Engine{sourceCollector: collector}
 }
 
-var admissionResolvers = map[string]AdmissionResolver{}
+var admissionResolvers = []AdmissionResolver{}
 
 type AdmissionResolver struct {
+	spec       plan.ActionSpec
 	criteria   []Fact
 	userInputs []string
 }
 
-func RegisterAdmissionResolver(name string, criteria []Fact, userInputs []string) {
-	admissionResolvers[name] = AdmissionResolver{criteria, userInputs}
+func RegisterAdmissionResolver(spec plan.ActionSpec, criteria []Fact, userInputs []string) {
+	admissionResolvers = append(admissionResolvers, AdmissionResolver{spec, criteria, userInputs})
 }
 
 type Rule func(string, *SourceCollector, mapset.Set[Fact]) (Fact, error)

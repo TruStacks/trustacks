@@ -11,7 +11,7 @@ import (
 var golangTest = &plan.Action{
 	Name:   "golangTest",
 	Image:  "golang",
-	State:  plan.FeebackState,
+	Stage:  plan.FeedbackStage,
 	Caches: []string{"/go/pkg/mod"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
 		container = container.WithExec([]string{"go", "test", "./...", "-v", "-short", "-cover"})
@@ -28,6 +28,14 @@ func init() {
 			Exclusions: &[]string{"testdata", "vendor"},
 		},
 	})
-	engine.RegisterAdmissionResolver(golangTest.Name, []engine.Fact{engine.HasGolangTestSourcesFact}, nil)
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        golangTest.Name,
+			DisplayName: "Golang Test",
+			Description: "Run the test suite with go test.",
+		},
+		[]engine.Fact{engine.HasGolangTestSourcesFact},
+		nil,
+	)
 	plan.RegisterAction(golangTest)
 }

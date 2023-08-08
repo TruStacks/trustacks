@@ -14,7 +14,7 @@ import (
 var containerBuildAction = &plan.Action{
 	Name:  "containerBuild",
 	Image: "busybox",
-	State: plan.OnDemandState,
+	Stage: plan.OnDemandStage,
 	OutputArtifacts: []plan.Artifact{
 		plan.ContainerImageArtifact,
 	},
@@ -24,10 +24,10 @@ var containerBuildAction = &plan.Action{
 	},
 }
 
-var containerCopyAction = &plan.Action{
+var containerPublishAction = &plan.Action{
 	Name:  "containerCopy",
 	Image: "alpine",
-	State: plan.PackageState,
+	Stage: plan.PackageStage,
 	InputArtifacts: []plan.Artifact{
 		plan.SemanticVersionArtifact,
 		plan.ContainerImageArtifact,
@@ -64,11 +64,23 @@ var containerCopyAction = &plan.Action{
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(containerBuildAction.Name, []engine.Fact{engine.ContainerfileIsMultiStageFact}, nil)
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        containerBuildAction.Name,
+			DisplayName: "Container Build",
+			Description: "Build a container image from the source Containerfile or Dockerfile.",
+		},
+		[]engine.Fact{engine.ContainerfileHasNoDependenciesFact},
+		nil,
+	)
 	plan.RegisterAction(containerBuildAction)
 
 	engine.RegisterAdmissionResolver(
-		containerCopyAction.Name,
+		plan.ActionSpec{
+			Name:        containerPublishAction.Name,
+			DisplayName: "Container Publish",
+			Description: "Publish the container to a container registry.",
+		},
 		[]engine.Fact{engine.ContainerfileExistFact},
 		[]string{
 			string(plan.ContainerRegistry),
@@ -76,5 +88,5 @@ func init() {
 			string(plan.ContainerRegistryPassword),
 		},
 	)
-	plan.RegisterAction(containerCopyAction)
+	plan.RegisterAction(containerPublishAction)
 }

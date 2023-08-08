@@ -12,7 +12,7 @@ import (
 var reactScriptsTestAction = &plan.Action{
 	Name:   "reactScriptsTest",
 	Image:  "node:alpine",
-	State:  plan.FeebackState,
+	Stage:  plan.FeedbackStage,
 	Caches: []string{"/src/node_modules"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "bash"})
@@ -27,7 +27,7 @@ var reactScriptsTestAction = &plan.Action{
 var reactScriptsBuildAction = &plan.Action{
 	Name:   "reactScriptsBuild",
 	Image:  "node:alpine",
-	State:  plan.OnDemandState,
+	Stage:  plan.OnDemandStage,
 	Caches: []string{"/src/node_modules"},
 	OutputArtifacts: []plan.Artifact{
 		plan.ApplicationDistArtifact,
@@ -47,9 +47,25 @@ func init() {
 		{Kind: engine.FilePatternMatch, Pattern: `\.test.ts`},
 		{Kind: engine.FilePatternMatch, Pattern: `\.test.tsx`},
 	})
-	engine.RegisterAdmissionResolver(reactScriptsTestAction.Name, []engine.Fact{engine.ReactScriptsTestExistsFact}, nil)
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        reactScriptsTestAction.Name,
+			DisplayName: "React Scripts Test",
+			Description: "Run the test suite with react-scripts test.",
+		},
+		[]engine.Fact{engine.ReactScriptsTestExistsFact},
+		nil,
+	)
 	plan.RegisterAction(reactScriptsTestAction)
 
-	engine.RegisterAdmissionResolver(reactScriptsBuildAction.Name, []engine.Fact{engine.ReactScriptsBuildExistsFact}, nil)
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        reactScriptsBuildAction.Name,
+			DisplayName: "React Scripts Build",
+			Description: "Build production react assets with react-scripts build.",
+		},
+		[]engine.Fact{engine.ReactScriptsBuildExistsFact},
+		nil,
+	)
 	plan.RegisterAction(reactScriptsBuildAction)
 }

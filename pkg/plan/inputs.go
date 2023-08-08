@@ -8,4 +8,5 @@ const (
 	ContainerRegistryPassword   InputField = "ContainerRegistryPassword"
 	KubernetesStagingKubeconfig InputField = "KubernetesStagingKubeconfig"
 	KubernetesNamespace         InputField = "KubernetesNamespace"
+	SonarqubeToken              InputField = "SonarqubeToken"
 )

@@ -11,7 +11,7 @@ import (
 var packageJsonVersion = &plan.Action{
 	Name:   "packageJsonVersion",
 	Image:  "node:alpine",
-	State:  plan.OnDemandState,
+	Stage:  plan.OnDemandStage,
 	Caches: []string{"/src/node_modules"},
 	OutputArtifacts: []plan.Artifact{
 		plan.SemanticVersionArtifact,
@@ -24,6 +24,14 @@ var packageJsonVersion = &plan.Action{
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(packageJsonVersion.Name, []engine.Fact{engine.PackageJsonVersionExistsFact}, nil)
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        packageJsonVersion.Name,
+			DisplayName: "Package JSON Version",
+			Description: "Use the package.json version as the semantic release version for versioned application artifacts.",
+		},
+		[]engine.Fact{engine.PackageJsonVersionExistsFact},
+		nil,
+	)
 	plan.RegisterAction(packageJsonVersion)
 }

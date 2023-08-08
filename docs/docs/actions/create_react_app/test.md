@@ -1,9 +1,9 @@
 ---
 title: Test
-slug: /actions/react-scripts/test
+slug: /actions/create-react-app/test
 ---
 
-# React Scripts - Test
+# Create React app - Test
 
 The test action runs [Jest Tests](https://create-react-app.dev/docs/running-tests) for a [Create React App](https://create-react-app.dev) (CRA) application.
 

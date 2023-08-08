@@ -1,9 +1,9 @@
 ---
 title: Build
-slug: /actions/react-scripts/build
+slug: /actions/create-react-app/build
 ---
 
-# React Scripts - Build
+# Create React App - Build
 
 The build action creates a [Production Build](https://create-react-app.dev/docs/production-build) for a [Create React App](https://create-react-app.dev) (CRA) application.
 

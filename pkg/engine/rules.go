@@ -2,7 +2,6 @@ package engine
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,20 +15,29 @@ type Fact int
 
 const NilFact Fact = -1
 
-const (
-	PackageJsonExistsFact Fact = iota
-	PackageJsonVersionExistsFact
-	ReactScriptsBuildExistsFact
-	ReactScriptsTestExistsFact
-	EslintConfigExistsFact
-	ContainerfileExistFact
-	ContainerfileIsMultiStageFact
-	GoModExistsFact
-	HasGolangTestSourcesFact
-	GolangCILintExistsFact
-	GoreleaserExistsFact
-	ExpressDepedencyExistsFact
-	HasHelmChartFact
+var factInc = 0
+
+func NewFact() Fact {
+	factInc++
+	return Fact(factInc)
+}
+
+var (
+	PackageJsonExistsFact              = NewFact()
+	PackageJsonVersionExistsFact       = NewFact()
+	ReactScriptsBuildExistsFact        = NewFact()
+	ReactScriptsTestExistsFact         = NewFact()
+	EslintConfigExistsFact             = NewFact()
+	ContainerfileExistFact             = NewFact()
+	ContainerfileHasNoDependenciesFact = NewFact()
+	GoModExistsFact                    = NewFact()
+	HasGolangTestSourcesFact           = NewFact()
+	GolangCILintExistsFact             = NewFact()
+	GoreleaserExistsFact               = NewFact()
+	ExpressDepedencyExistsFact         = NewFact()
+	HasHelmChartFact                   = NewFact()
+	TrivyConfigExistsFact              = NewFact()
+	SonarProjectPropertiesExists       = NewFact()
 )
 
 var packageJsonExistsRule Rule = func(source string, _ *SourceCollector, _ mapset.Set[Fact]) (Fact, error) {
@@ -69,8 +77,14 @@ var reactScriptsTestExsitsRule Rule = func(source string, collector *SourceColle
 	if err := json.Unmarshal(data, &packageJson); err != nil {
 		return fact, err
 	}
-	if len(collector.Search(`\.test.js`)) > 0 && strings.Contains(packageJson["scripts"].(map[string]interface{})["test"].(string), "react-scripts test") {
-		fact = ReactScriptsTestExistsFact
+	if len(collector.Search(`\.test.js`)) > 0 {
+		if _, ok := packageJson["scripts"].(map[string]interface{}); ok {
+			if _, ok := packageJson["scripts"].(map[string]interface{})["test"]; ok {
+				if strings.Contains(packageJson["scripts"].(map[string]interface{})["test"].(string), "react-scripts test") {
+					fact = ReactScriptsTestExistsFact
+				}
+			}
+		}
 	}
 	return fact, nil
 }
@@ -148,38 +162,31 @@ var containerfileExistsRule Rule = func(source string, _ *SourceCollector, _ map
 	return fact, nil
 }
 
-var ContainerfileIsMultistageRule Rule = func(source string, _ *SourceCollector, _ mapset.Set[Fact]) (Fact, error) {
+var ContainerfileHasNoDependenciesRule Rule = func(source string, _ *SourceCollector, _ mapset.Set[Fact]) (Fact, error) {
 	var fact = NilFact
 	for _, file := range []string{"Dockerfile", "Containerfile"} {
 		if _, err := os.Stat(filepath.Join(source, file)); !os.IsNotExist(err) {
-			var builder string
 			contents, err := os.ReadFile(filepath.Join(source, file))
 			if err != nil {
 				return fact, err
 			}
-			fromRegex, err := regexp.Compile(`(?im)^FROM`)
+			re, err := regexp.Compile(`COPY\s(.*?)\s`)
 			if err != nil {
 				return fact, err
 			}
-			if len(fromRegex.FindAllString(string(contents), 10)) > 1 {
-				builderRegex, err := regexp.Compile(`(?im)^FROM.*AS\s(.*)`)
-				if err != nil {
-					return fact, err
+			matches := re.FindAllStringSubmatch(string(contents), -1)
+			for _, match := range matches {
+				copy := string(match[1])
+				if copy == "." || strings.Contains(copy, "--from=") {
+					continue
 				}
-				submatch := builderRegex.FindAllSubmatch(contents, 10)
-				if len(submatch) > 1 {
-					builder = string(submatch[0][1])
+				if _, err := os.Stat(filepath.Join(source, copy)); os.IsNotExist(err) {
+					return fact, nil
 				}
-			}
-			fromBuilderRegex, err := regexp.Compile(fmt.Sprintf(`(?im)--from=(0|%s)`, builder))
-			if err != nil {
-				return fact, err
-			}
-			if fromBuilderRegex.Match(contents) {
-				fact = ContainerfileIsMultiStageFact
 			}
 		}
 	}
+	fact = ContainerfileHasNoDependenciesFact
 	return fact, nil
 }
 
@@ -276,26 +283,54 @@ var hasHelmChartRule Rule = func(source string, collector *SourceCollector, _ ma
 	return fact, nil
 }
 
+var trivyConfigExistsRule Rule = func(source string, collector *SourceCollector, _ mapset.Set[Fact]) (Fact, error) {
+	var fact = NilFact
+	if _, err := os.Stat(filepath.Join(source, "trivy.yaml")); os.IsNotExist(err) {
+		return fact, nil
+	} else if err != nil {
+		return fact, err
+	}
+	fact = TrivyConfigExistsFact
+	return fact, nil
+}
+
+var sonarProjectPropertiesExistsRule Rule = func(source string, collector *SourceCollector, _ mapset.Set[Fact]) (Fact, error) {
+	var fact = NilFact
+	if _, err := os.Stat(filepath.Join(source, "sonar-project.properties")); os.IsNotExist(err) {
+		return fact, nil
+	} else if err != nil {
+		return fact, err
+	}
+	fact = SonarProjectPropertiesExists
+	return fact, nil
+}
+
 func init() {
-	// package.json root.
+	// packageJsonExistsRule branch.
 	addToRuleset(&packageJsonExistsRule, &reactScriptsTestExsitsRule)
 	addToRuleset(&packageJsonExistsRule, &reactScriptsBuildExsitsRule)
 	addToRuleset(&packageJsonExistsRule, &eslintConfigExistsRule)
 	addToRuleset(&packageJsonExistsRule, &packageJsonVersionExistsRule)
 	addToRuleset(&packageJsonExistsRule, &expressDepedencyExistsRule)
 
-	// express js root.
+	// expressDepedencyExistsRule branch.
 	addToRuleset(&expressDepedencyExistsRule, &containerfileExistsRule)
 
-	// react scripts root.
+	// reactScriptsBuildExsitsRule branch.
 	addToRuleset(&reactScriptsBuildExsitsRule, &containerfileExistsRule)
 
-	// containerfile exists root.
+	// containerfileExistsRule branch.
+	addToRuleset(&containerfileExistsRule, &ContainerfileHasNoDependenciesRule)
 	addToRuleset(&containerfileExistsRule, &hasHelmChartRule)
-	addToRuleset(&containerfileExistsRule, &ContainerfileIsMultistageRule)
 
-	// golang root.
+	//ContainerfileHasNoDependenciesRule branch.
+	addToRuleset(&ContainerfileHasNoDependenciesRule, &trivyConfigExistsRule)
+
+	// hasGoModRule branch.
 	addToRuleset(&hasGoModRule, &hasGolangTestSourcesRule)
 	addToRuleset(&hasGoModRule, &golangCILintExistsRule)
 	addToRuleset(&hasGoModRule, &goreleaserExistsRule)
+
+	// sonarProjectPropertiesExistsRule branch.
+	addToRuleset(&sonarProjectPropertiesExistsRule, nil)
 }

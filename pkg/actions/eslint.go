@@ -11,9 +11,9 @@ import (
 var eslintRunAction = &plan.Action{
 	Name:   "eslintRun",
 	Image:  "node:alpine",
-	State:  plan.FeebackState,
+	Stage:  plan.FeedbackStage,
 	Caches: []string{"/src/node_modules"},
-	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
+	Script: func(container *dagger.Container, _ map[string]interface{}, utils *plan.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "bash"})
 		container = container.WithExec([]string{"npm", "install"})
 		container = container.WithExec([]string{"npx", "-y", "eslint", "./"})
@@ -23,6 +23,14 @@ var eslintRunAction = &plan.Action{
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(eslintRunAction.Name, []engine.Fact{engine.ReactScriptsTestExistsFact}, nil)
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        eslintRunAction.Name,
+			DisplayName: "ESLint Run",
+			Description: "Lint the source with ESLint.",
+		},
+		[]engine.Fact{engine.EslintConfigExistsFact},
+		nil,
+	)
 	plan.RegisterAction(eslintRunAction)
 }

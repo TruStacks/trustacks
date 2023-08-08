@@ -17,7 +17,7 @@ import (
 var helmInstallStageAction = &plan.Action{
 	Name:  "helmInstall[Stage]",
 	Image: "alpine/helm",
-	State: plan.StageState,
+	Stage: plan.StageStage,
 	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *plan.ActionUtilities) error {
 		args := struct {
 			KubernetesStagingKubeconfig string
@@ -59,7 +59,11 @@ func init() {
 		},
 	})
 	engine.RegisterAdmissionResolver(
-		helmInstallStageAction.Name,
+		plan.ActionSpec{
+			Name:        helmInstallStageAction.Name,
+			DisplayName: "Helm Install [Stage]",
+			Description: "Install the application into a kubernetes staging cluster with helm.",
+		},
 		[]engine.Fact{engine.HasHelmChartFact},
 		[]string{
 			string(plan.KubernetesStagingKubeconfig),

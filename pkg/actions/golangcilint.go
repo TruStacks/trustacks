@@ -12,7 +12,7 @@ import (
 var golangCILintRun = &plan.Action{
 	Name:   "golangCILintRun",
 	Image:  "golang:alpine",
-	State:  plan.FeebackState,
+	Stage:  plan.FeedbackStage,
 	Caches: []string{"/go/pkg/mod"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
 		golangciLintVersion := "v1.53.3"
@@ -29,6 +29,14 @@ var golangCILintRun = &plan.Action{
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(golangCILintRun.Name, []engine.Fact{engine.GolangCILintExistsFact}, nil)
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        golangCILintRun.Name,
+			DisplayName: "GolangCILint Run",
+			Description: "Lint the source with golangci-lint.",
+		},
+		[]engine.Fact{engine.GolangCILintExistsFact},
+		nil,
+	)
 	plan.RegisterAction(golangCILintRun)
 }
