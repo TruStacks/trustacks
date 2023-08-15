@@ -15,14 +15,14 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: yarn
-          cache-dependency-path: ./docs/yarn.lock 
+          cache: npm
+          cache-dependency-path: ./docs/package-lock.json 
 
       - name: Install dependencies
-        run: cd docs && yarn install --frozen-lockfile
+        run: cd docs && npm install
       
       - name: Build website
-        run: cd docs && yarn build
+        run: cd docs && npm run build
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
