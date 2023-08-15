@@ -12,7 +12,7 @@ Stacks contain external configuration parameters that cannot be securely or reli
 
 ## Input Fields
 
-Stacks parameters are provided as input fields in the [Action Plan](/action-plans). The fields required by the stack file are under the `inputs` key as key/value pairs.
+Stacks parameters are provided as input fields in the action plan. The fields required by the stack file are under the `inputs` key as key/value pairs.
 
 :::info
 Parameters defined in the stack configuration are only used when needed by a given action plan.
