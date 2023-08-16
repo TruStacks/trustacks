@@ -22,12 +22,12 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/stripe/stripe-go/v74"
+	"github.com/stripe/stripe-go/v74/paymentintent"
 	_ "github.com/trustacks/pkg/actions"
 	"github.com/trustacks/pkg/engine"
-	"github.com/trustacks/pkg/plan"
 	"go.mozilla.org/sops/v3/decrypt"
 	"golang.org/x/crypto/bcrypt"
-	cryptossh "golang.org/x/crypto/ssh"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,9 +38,7 @@ var (
 	jwtSigningKey = []byte(os.Getenv("JWT_SIGNING_KEY"))
 )
 
-type rpcHandler struct {
-	projectID string
-}
+type rpcHandler struct{}
 
 func (rpc *rpcHandler) newFrebaseClient() (*firestore.Client, error) {
 	ctx := context.Background()
@@ -63,13 +61,12 @@ func (rpc *rpcHandler) cloneSource(url, privateKey, path string) error {
 	if privateKey != "" {
 		publicKeys, err := ssh.NewPublicKeys("git", []byte(privateKey), "")
 		if err != nil {
-			return err
+			return fmt.Errorf("public key error: %s", err)
 		}
-		publicKeys.HostKeyCallback = cryptossh.InsecureIgnoreHostKey()
 		cloneOptions.Auth = publicKeys
 	}
 	if _, err := git.PlainClone(path, false, cloneOptions); err != nil {
-		return err
+		return fmt.Errorf("error cloning the application: %s", err)
 	}
 	return nil
 }
@@ -109,6 +106,7 @@ func (rpc *rpcHandler) NewUser(username, password, registrationKey string) error
 	}
 	_, err = client.Collection("users").Doc(username).Set(context.Background(), map[string]interface{}{
 		"password": hashedPassword,
+		"trialExp": time.Now().AddDate(0, 0, 14).Unix(),
 	})
 	return err
 }
@@ -126,8 +124,13 @@ func (rpc *rpcHandler) validateSessionToken(tokenString string) error {
 	return nil
 }
 
+type SessionTokenClaims struct {
+	TrialExpiration int64 `json:"trialExpiration"`
+	jwt.RegisteredClaims
+}
+
 func (rpc *rpcHandler) getSessionTokenUser(tokenString string) (string, error) {
-	claims := &jwt.RegisteredClaims{}
+	claims := &SessionTokenClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtSigningKey, nil
 	})
@@ -138,7 +141,7 @@ func (rpc *rpcHandler) getSessionTokenUser(tokenString string) (string, error) {
 }
 
 func (rpc *rpcHandler) RefreshSessionToken(tokenString string) (string, error) {
-	claims := &jwt.RegisteredClaims{}
+	claims := &SessionTokenClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtSigningKey, nil
 	})
@@ -148,10 +151,13 @@ func (rpc *rpcHandler) RefreshSessionToken(tokenString string) (string, error) {
 	if !token.Valid {
 		return "", errors.New("session token is invalid")
 	}
-	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 1)),
-		Issuer:    "trustacks",
-		Subject:   claims.Subject,
+	newToken := jwt.NewWithClaims(jwt.SigningMethodHS256, SessionTokenClaims{
+		claims.TrialExpiration,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
+			Issuer:    "trustacks",
+			Subject:   claims.Subject,
+		},
 	})
 	return newToken.SignedString(jwtSigningKey)
 }
@@ -172,15 +178,24 @@ func (rpc *rpcHandler) NewSessionToken(username, password string) (string, error
 	if err := bcrypt.CompareHashAndPassword(doc.Data()["password"].([]byte), []byte(password)); err != nil {
 		return "", errors.New("invalid username or password")
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 20)),
-		Issuer:    "trustacks",
-		Subject:   username,
-	})
+	claims := SessionTokenClaims{
+		doc.Data()["trialExp"].(int64),
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
+			Issuer:    "trustacks",
+			Subject:   username,
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSigningKey)
 }
 
-func (rpc *rpcHandler) NewActionPlan(url, path, privateKey, token string) error {
+func (rpc *rpcHandler) NewActionPlan(url, path, username, password, privateKey, token string) error {
+	if match, err := regexp.MatchString(`^http://`, url); err != nil {
+		return err
+	} else if match {
+		return errors.New("insecure http is not allowed. please use https")
+	}
 	if err := rpc.validateSessionToken(token); err != nil {
 		return err
 	}
@@ -204,11 +219,6 @@ func (rpc *rpcHandler) NewActionPlan(url, path, privateKey, token string) error 
 	if err != nil {
 		return err
 	}
-	source, err := os.MkdirTemp("", "action-plan-source-")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(source)
 	matches := re.FindAllString(url, -1)
 	if len(matches) < 1 {
 		return errors.New("unable to derive name from git url")
@@ -217,7 +227,29 @@ func (rpc *rpcHandler) NewActionPlan(url, path, privateKey, token string) error 
 	if path != "" {
 		name = fmt.Sprintf("%s-%s", name, strings.ToLower(strings.ReplaceAll(path, "/", "")))
 	}
-	if err := rpc.cloneSource(url, privateKey, source); err != nil {
+	iter := client.Collection("actionplans").
+		Where("user", "==", user).
+		Where("name", "==", name).
+		Documents(context.Background())
+	doc, err := iter.Next()
+	if err != nil && err != iterator.Done {
+		return err
+	}
+	if doc != nil {
+		return errors.New("action plan already exists")
+	}
+	source, err := os.MkdirTemp("", "action-plan-source-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(source)
+	var basicAuth bool
+	cloneUrl := url
+	if strings.Contains(url, "https://") && len(username) > 0 && len(password) > 0 {
+		basicAuth = true
+		cloneUrl = strings.Replace(cloneUrl, "https://", fmt.Sprintf("https://%s:%s@", username, password), 1)
+	}
+	if err := rpc.cloneSource(cloneUrl, privateKey, source); err != nil {
 		return err
 	}
 	spec, err := engine.New().CreateActionPlan(filepath.Join(source, path), false)
@@ -233,6 +265,7 @@ func (rpc *rpcHandler) NewActionPlan(url, path, privateKey, token string) error 
 		"user":       user,
 		"plan":       plan,
 		"repository": url,
+		"basicAuth":  basicAuth,
 	}
 	if path != "" {
 		data["path"] = path
@@ -271,26 +304,25 @@ func (rpc *rpcHandler) ListActionPlans(token string) ([]map[string]interface{}, 
 		if err != nil {
 			return nil, err
 		}
-		data := doc.Data()["plan"].(map[string]interface{})
-		actionPlan := map[string]interface{}{"name": doc.Data()["name"], "repository": doc.Data()["repository"]}
-		if _, ok := data["actions"]; ok {
-			actionPlan["actions"] = data["actions"]
+		data := doc.Data()
+		actionPlan := map[string]interface{}{
+			"name":       data["name"],
+			"repository": data["repository"],
+			"basicAuth":  data["basicAuth"],
 		}
-		if _, ok := data["fields"]; ok {
-			actionPlan["fields"] = data["fields"]
+		planData := data["plan"].(map[string]interface{})
+		if exclusions, ok := data["exclusions"]; ok {
+			actionPlan["exclusions"] = exclusions
 		}
-		if _, ok := data["exclusions"]; ok {
-			actionPlan["exclusions"] = data["exclusions"]
+		if _, ok := planData["actions"]; ok {
+			actionPlan["actions"] = planData["actions"]
+		}
+		if _, ok := planData["fields"]; ok {
+			actionPlan["fields"] = planData["fields"]
 		}
 		actionPlans = append(actionPlans, actionPlan)
 	}
 	return actionPlans, nil
-}
-
-type GetActionPlanSpec struct {
-	Path   string                 `json:"path"`
-	Plan   []*plan.ActionSpec     `json:"spec"`
-	Inputs map[string]interface{} `json:"inputs"`
 }
 
 func (rpc *rpcHandler) GetActionPlan(name, token string) (map[string]interface{}, error) {
@@ -328,6 +360,67 @@ func (rpc *rpcHandler) GetActionPlan(name, token string) (map[string]interface{}
 	return doc.Data(), nil
 }
 
+func (rpc *rpcHandler) UpdateActionPlan(name, username, password, privateKey, token string) error {
+	if err := rpc.validateSessionToken(token); err != nil {
+		return err
+	}
+	user, err := rpc.getSessionTokenUser(token)
+	if err != nil {
+		return err
+	}
+	client, err := rpc.newFrebaseClient()
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+	userExists, err := rpc.userExists(user)
+	if err != nil {
+		return err
+	}
+	if !userExists {
+		return errors.New("user does not exist")
+	}
+	iter := client.Collection("actionplans").
+		Where("user", "==", user).
+		Where("name", "==", name).
+		Documents(context.Background())
+	doc, err := iter.Next()
+	if err != nil {
+		if err == iterator.Done {
+			return errors.New("action plan does not exist")
+		}
+		return err
+	}
+	data := doc.Data()
+	source, err := os.MkdirTemp("", "action-plan-source-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(source)
+	url := data["repository"].(string)
+	if strings.Contains(url, "https://") && len(username) > 0 && len(password) > 0 {
+		url = strings.Replace(url, "https://", fmt.Sprintf("https://%s:%s@", username, password), 1)
+	}
+	if err := rpc.cloneSource(url, privateKey, source); err != nil {
+		return err
+	}
+	path := ""
+	if _, ok := data["path"]; ok {
+		path = data["path"].(string)
+	}
+	spec, err := engine.New().CreateActionPlan(filepath.Join(source, path), false)
+	if err != nil {
+		return err
+	}
+	plan := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(spec), &plan); err != nil {
+		return err
+	}
+	data["plan"] = plan
+	_, err = client.Collection("actionplans").Doc(doc.Ref.ID).Set(context.Background(), data)
+	return err
+}
+
 func (rpc *rpcHandler) DeleteActionPlan(name string, token string) error {
 	if err := rpc.validateSessionToken(token); err != nil {
 		return err
@@ -348,7 +441,18 @@ func (rpc *rpcHandler) DeleteActionPlan(name string, token string) error {
 	if !userExists {
 		return errors.New("user does not exist")
 	}
-	_, err = client.Collection("actionplans").Doc(name).Delete(context.Background())
+	iter := client.Collection("actionplans").
+		Where("user", "==", user).
+		Where("name", "==", name).
+		Documents(context.Background())
+	doc, err := iter.Next()
+	if err != nil {
+		if err == iterator.Done {
+			return errors.New("action plan does not exist")
+		}
+		return err
+	}
+	_, err = client.Collection("actionplans").Doc(doc.Ref.ID).Delete(context.Background())
 	return err
 }
 
@@ -410,6 +514,22 @@ func (rpc *rpcHandler) SaveStackContext(name, ageSecretKey string, ctx map[strin
 	if !userExists {
 		return errors.New("user does not exist")
 	}
+	iter := client.Collection("stacks").
+		Where("user", "==", user).
+		Where("name", "==", name).
+		Limit(1).
+		Documents(context.Background())
+	doc, err := iter.Next()
+	if err != nil && err != iterator.Done {
+		return err
+	}
+	data := map[string]interface{}{
+		"name": name,
+		"user": user,
+	}
+	if doc != nil {
+		data = doc.Data()
+	}
 	f, err := os.CreateTemp("", "stack-context-")
 	if err != nil {
 		return err
@@ -422,9 +542,71 @@ func (rpc *rpcHandler) SaveStackContext(name, ageSecretKey string, ctx map[strin
 	if _, err := f.Write([]byte(ctxJson)); err != nil {
 		return err
 	}
-	f.Seek(0, 0)
-	b := make([]byte, 1000)
-	if _, err := f.Read(b); err != nil {
+	identity, err := age.ParseX25519Identity(strings.ReplaceAll(ageSecretKey, "\n", ""))
+	if err != nil {
+		return err
+	}
+	buf := bytes.NewBuffer([]byte(""))
+	cmd := exec.Command("sops", "-e", "--age", identity.Recipient().String(), "--input-type", "json", f.Name())
+	cmd.Stdout = buf
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	encryptedContext := map[string]interface{}{}
+	if err := json.Unmarshal(buf.Bytes(), &encryptedContext); err != nil {
+		return err
+	}
+	data["data"] = encryptedContext
+	if doc == nil {
+		_, _, err = client.Collection("stacks").Add(context.Background(), data)
+	} else {
+		_, err = client.Collection("stacks").Doc(doc.Ref.ID).Set(context.Background(), data)
+	}
+	return err
+}
+
+func (rpc *rpcHandler) UpdateStackContext(name, ageSecretKey string, ctx map[string]interface{}, token string) error {
+	if err := rpc.validateSessionToken(token); err != nil {
+		return err
+	}
+	user, err := rpc.getSessionTokenUser(token)
+	if err != nil {
+		return err
+	}
+	client, err := rpc.newFrebaseClient()
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+	userExists, err := rpc.userExists(user)
+	if err != nil {
+		return err
+	}
+	if !userExists {
+		return errors.New("user does not exist")
+	}
+	iter := client.Collection("stacks").
+		Where("user", "==", user).
+		Where("name", "==", name).
+		Limit(1).
+		Documents(context.Background())
+	doc, err := iter.Next()
+	if err != nil {
+		if err == iterator.Done {
+			return errors.New("stack context does not exist")
+		}
+		return err
+	}
+	f, err := os.CreateTemp("", "stack-context-")
+	if err != nil {
+		return err
+	}
+	ctxJson, err := json.Marshal(ctx)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.Write([]byte(ctxJson)); err != nil {
 		return err
 	}
 	identity, err := age.ParseX25519Identity(strings.ReplaceAll(ageSecretKey, "\n", ""))
@@ -437,15 +619,13 @@ func (rpc *rpcHandler) SaveStackContext(name, ageSecretKey string, ctx map[strin
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	data := map[string]interface{}{}
-	if err := json.Unmarshal(buf.Bytes(), &data); err != nil {
+	encryptedContext := map[string]interface{}{}
+	if err := json.Unmarshal(buf.Bytes(), &encryptedContext); err != nil {
 		return err
 	}
-	_, err = client.Collection("stacks").Doc(name).Set(context.Background(), map[string]interface{}{
-		"name": name,
-		"user": user,
-		"data": data,
-	})
+	data := doc.Data()
+	data["data"] = encryptedContext
+	_, err = client.Collection("stacks").Doc(doc.Ref.ID).Set(context.Background(), data)
 	return err
 }
 
@@ -495,7 +675,7 @@ func (rpc *rpcHandler) ListStackContexts(ageSecretKey string, decryptInputs bool
 			}
 		}
 		delete(data, "sops")
-		stackInputs[doc.Ref.ID] = data
+		stackInputs[doc.Data()["name"].(string)] = data
 	}
 	return stackInputs, nil
 }
@@ -520,6 +700,9 @@ func (rpc *rpcHandler) GetStackContext(name, ageSecretKey, token string) (map[st
 		Documents(context.Background())
 	doc, err := iter.Next()
 	if err != nil {
+		if err == iterator.Done {
+			return nil, errors.New("stack context does not exist")
+		}
 		return nil, err
 	}
 	data := doc.Data()["data"].(map[string]interface{})
