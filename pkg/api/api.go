@@ -20,6 +20,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/filecoin-project/go-jsonrpc"
 	"github.com/go-git/go-git/v5"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stripe/stripe-go/v74"
@@ -50,7 +51,7 @@ func (rpc *rpcHandler) newFrebaseClient() (*firestore.Client, error) {
 	return app.Firestore(ctx)
 }
 
-func (rpc *rpcHandler) cloneSource(url, privateKey, path string) error {
+func (rpc *rpcHandler) cloneSource(url, username, password, privateKey, path string) error {
 	cloneOptions := &git.CloneOptions{
 		URL:          url,
 		SingleBranch: true,
@@ -64,6 +65,12 @@ func (rpc *rpcHandler) cloneSource(url, privateKey, path string) error {
 			return fmt.Errorf("public key error: %s", err)
 		}
 		cloneOptions.Auth = publicKeys
+	}
+	if len(password) > 0 {
+		cloneOptions.Auth = &githttp.BasicAuth{
+			Username: username,
+			Password: password,
+		}
 	}
 	if _, err := git.PlainClone(path, false, cloneOptions); err != nil {
 		return fmt.Errorf("error cloning the application: %s", err)
@@ -244,13 +251,12 @@ func (rpc *rpcHandler) NewActionPlan(url, path, username, password, privateKey, 
 	}
 	defer os.RemoveAll(source)
 	var basicAuth bool
-	cloneUrl := url
-	if strings.Contains(url, "https://") && len(username) > 0 && len(password) > 0 {
+	if strings.Contains(url, "https://") && len(password) > 0 {
 		basicAuth = true
-		cloneUrl = strings.Replace(cloneUrl, "https://", fmt.Sprintf("https://%s:%s@", username, password), 1)
 	}
-	if err := rpc.cloneSource(cloneUrl, privateKey, source); err != nil {
-		return err
+	if err := rpc.cloneSource(url, username, password, privateKey, source); err != nil {
+		log.Error(err)
+		return errors.New("error cloning the repository")
 	}
 	spec, err := engine.New().CreateActionPlan(filepath.Join(source, path), false)
 	if err != nil {
@@ -397,12 +403,8 @@ func (rpc *rpcHandler) UpdateActionPlan(name, username, password, privateKey, to
 		return err
 	}
 	defer os.RemoveAll(source)
-	url := data["repository"].(string)
-	if strings.Contains(url, "https://") && len(username) > 0 && len(password) > 0 {
-		url = strings.Replace(url, "https://", fmt.Sprintf("https://%s:%s@", username, password), 1)
-	}
-	if err := rpc.cloneSource(url, privateKey, source); err != nil {
-		return err
+	if err := rpc.cloneSource(data["repository"].(string), username, password, privateKey, source); err != nil {
+		return errors.New("error cloning the repository")
 	}
 	path := ""
 	if _, ok := data["path"]; ok {
@@ -700,7 +702,10 @@ func (rpc *rpcHandler) GetStackContext(name, ageSecretKey, token string) (map[st
 		Documents(context.Background())
 	doc, err := iter.Next()
 	if err != nil {
-		if err == iterator.Done {
+		if err == iterator.Done && name == "default" {
+			return map[string]interface{}{}, nil
+		}
+		if err == iterator.Done && name != "default" {
 			return nil, errors.New("stack context does not exist")
 		}
 		return nil, err
