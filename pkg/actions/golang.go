@@ -34,7 +34,7 @@ func init() {
 			DisplayName: "Golang Test",
 			Description: "Run the test suite with go test.",
 		},
-		[]engine.Fact{engine.HasGolangTestSourcesFact},
+		[]engine.Fact{},
 		nil,
 	)
 	plan.RegisterAction(golangTest)

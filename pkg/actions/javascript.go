@@ -5,6 +5,7 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/trustacks/pkg/engine"
+	"github.com/trustacks/pkg/engine/rules"
 	"github.com/trustacks/pkg/plan"
 )
 
@@ -30,7 +31,7 @@ func init() {
 			DisplayName: "Package JSON Version",
 			Description: "Use the package.json version as the semantic release version for versioned application artifacts.",
 		},
-		[]engine.Fact{engine.PackageJsonVersionExistsFact},
+		[]engine.Fact{rules.PackageJsonVersionExistsFact},
 		nil,
 	)
 	plan.RegisterAction(packageJsonVersion)

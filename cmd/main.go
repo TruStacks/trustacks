@@ -8,6 +8,7 @@ import (
 	"github.com/trustacks/internal"
 	_ "github.com/trustacks/pkg/actions"
 	"github.com/trustacks/pkg/api"
+	_ "github.com/trustacks/pkg/engine/rules"
 )
 
 var (

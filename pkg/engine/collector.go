@@ -11,6 +11,10 @@ import (
 
 var collector *SourceCollector = newSourceCollector()
 
+type Collector interface {
+	Search(string) []string
+}
+
 type SourceCollector struct {
 	entries           map[string]mapset.Set[string]
 	patternMatches    mapset.Set[PatternMatch]

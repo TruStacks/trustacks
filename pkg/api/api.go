@@ -24,7 +24,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stripe/stripe-go/v74"
-	"github.com/stripe/stripe-go/v74/paymentintent"
+	"github.com/stripe/stripe-go/v74/checkout/session"
 	_ "github.com/trustacks/pkg/actions"
 	"github.com/trustacks/pkg/engine"
 	"go.mozilla.org/sops/v3/decrypt"
@@ -37,6 +37,7 @@ import (
 var (
 	projectID     = os.Getenv("FIREBASE_PROJECT_ID")
 	jwtSigningKey = []byte(os.Getenv("JWT_SIGNING_KEY"))
+	stripeKey     = os.Getenv("STRIPE_API_KEY")
 )
 
 type rpcHandler struct{}
@@ -94,12 +95,33 @@ func (rpc *rpcHandler) userExists(username string) (bool, error) {
 	return false, nil
 }
 
+func (rpc *rpcHandler) userIsInvited(username string) (bool, error) {
+	client, err := rpc.newFrebaseClient()
+	if err != nil {
+		return false, err
+	}
+	defer client.Close()
+	doc, err := client.Collection("invitations").Doc(username).Get(context.Background())
+	if err != nil && status.Code(err) != codes.NotFound {
+		return false, nil
+	}
+	if doc.Exists() {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (rpc *rpcHandler) NewUser(username, password, registrationKey string) error {
 	client, err := rpc.newFrebaseClient()
 	if err != nil {
 		return err
 	}
 	defer client.Close()
+	if invited, err := rpc.userIsInvited(username); err != nil {
+		return err
+	} else if !invited {
+		return errors.New("you have not been invited yet. visit trustacks.com to join the waitlist")
+	}
 	userExists, err := rpc.userExists(username)
 	if err != nil {
 		return err
@@ -132,7 +154,7 @@ func (rpc *rpcHandler) validateSessionToken(tokenString string) error {
 }
 
 type SessionTokenClaims struct {
-	TrialExpiration int64 `json:"trialExpiration"`
+	TrialExpiration *int64 `json:"trialExpiration,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -169,6 +191,26 @@ func (rpc *rpcHandler) RefreshSessionToken(tokenString string) (string, error) {
 	return newToken.SignedString(jwtSigningKey)
 }
 
+func (rpc *rpcHandler) userHasUpgraded(email string) (bool, error) {
+	var hasUpgraded bool
+	stripe.Key = stripeKey
+	params := &stripe.CheckoutSessionListParams{
+		CustomerDetails: &stripe.CheckoutSessionListCustomerDetailsParams{
+			Email: &email,
+		},
+	}
+	params.Filters.AddFilter("limit", "", "1")
+	params.Single = true
+	it := session.List(params)
+	for it.Next() {
+		hasUpgraded = true
+	}
+	if err := it.Err(); err != nil {
+		return hasUpgraded, err
+	}
+	return hasUpgraded, nil
+}
+
 func (rpc *rpcHandler) NewSessionToken(username, password string) (string, error) {
 	client, err := rpc.newFrebaseClient()
 	if err != nil {
@@ -185,13 +227,29 @@ func (rpc *rpcHandler) NewSessionToken(username, password string) (string, error
 	if err := bcrypt.CompareHashAndPassword(doc.Data()["password"].([]byte), []byte(password)); err != nil {
 		return "", errors.New("invalid username or password")
 	}
+
 	claims := SessionTokenClaims{
-		doc.Data()["trialExp"].(int64),
+		nil,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
 			Issuer:    "trustacks",
 			Subject:   username,
 		},
+	}
+	if hasUpgraded, err := rpc.userHasUpgraded(username); err != nil {
+		return "", errors.New("failed checking user upgrade status")
+	} else if hasUpgraded {
+		if _, ok := doc.Data()["upgraded"]; !ok {
+			data := doc.Data()
+			data["upgraded"] = true
+			_, err = client.Collection("users").Doc(doc.Ref.ID).Set(context.Background(), data)
+			if err != nil {
+				return "", err
+			}
+		}
+	} else {
+		exp := doc.Data()["trialExp"].(int64)
+		claims.TrialExpiration = &exp
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSigningKey)
@@ -726,22 +784,6 @@ func (rpc *rpcHandler) GetStackContext(name, ageSecretKey, token string) (map[st
 	}
 	delete(data, "sops")
 	return data, nil
-}
-
-func (rpc *rpcHandler) CreatePaymentIntent() (string, error) {
-	stripe.Key = "sk_test_4eC39HqLyjWDarjtT1zdp7dc"
-	pi, err := paymentintent.New(&stripe.PaymentIntentParams{
-		Amount:   stripe.Int64(29),
-		Currency: stripe.String(string(stripe.CurrencyUSD)),
-		AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
-			Enabled: stripe.Bool(true),
-		},
-	})
-	if err != nil {
-		log.Error(err)
-		return "", errors.New("failed to create payment intent")
-	}
-	return pi.ClientSecret, nil
 }
 
 func StartServer(host, port string) error {

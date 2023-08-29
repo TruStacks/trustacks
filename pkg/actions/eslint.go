@@ -5,6 +5,7 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/trustacks/pkg/engine"
+	"github.com/trustacks/pkg/engine/rules"
 	"github.com/trustacks/pkg/plan"
 )
 
@@ -29,7 +30,7 @@ func init() {
 			DisplayName: "ESLint Run",
 			Description: "Lint the source with ESLint.",
 		},
-		[]engine.Fact{engine.EslintConfigExistsFact},
+		[]engine.Fact{rules.ESLintConfigExistsFact},
 		nil,
 	)
 	plan.RegisterAction(eslintRunAction)

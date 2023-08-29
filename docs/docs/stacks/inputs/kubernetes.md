@@ -69,7 +69,8 @@ kubectl config set-credentials $user --client-key=$user.key --client-certificate
 kubectl config set-context $context --cluster=$cluster --user=$user
 kubectl config use-context $context
 kubectl config view --flatten > $context-$user-kubeconfig.yaml
-echo "KUBECONFIG created at $context-$user-kubeconfig.yaml"
+kubectl config view --flatten -o json > $context-$user-kubeconfig.json
+echo "KUBECONFIG created at $context-$user-kubeconfig.yaml(.json)"
 
 # clean up script artifacts.
 rm $KUBECONFIG $user.key $user.csr $user.crt

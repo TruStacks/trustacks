@@ -5,6 +5,7 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/trustacks/pkg/engine"
+	"github.com/trustacks/pkg/engine/rules"
 	"github.com/trustacks/pkg/plan"
 )
 
@@ -34,7 +35,7 @@ func init() {
 			DisplayName: "Trivy Scan",
 			Description: "Scan the container image with the trivy security scanner.",
 		},
-		[]engine.Fact{engine.TrivyConfigExistsFact},
+		[]engine.Fact{rules.TrivyConfigExistsFact},
 		nil,
 	)
 	plan.RegisterAction(trivyImageAction)

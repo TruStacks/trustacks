@@ -30,7 +30,7 @@ func init() {
 			DisplayName: "GoReleaser Pre-Release",
 			Description: "Run goreleaser with the prerelease flag.",
 		},
-		[]engine.Fact{engine.GoreleaserExistsFact},
+		[]engine.Fact{},
 		nil,
 	)
 	plan.RegisterAction(goreleaserPreRelease)

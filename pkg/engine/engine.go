@@ -47,6 +47,17 @@ func New() *Engine {
 	return &Engine{sourceCollector: collector}
 }
 
+type Fact int
+
+const NilFact Fact = -1
+
+var factInc = 0
+
+func NewFact() Fact {
+	factInc++
+	return Fact(factInc)
+}
+
 var admissionResolvers = []AdmissionResolver{}
 
 type AdmissionResolver struct {
@@ -59,7 +70,7 @@ func RegisterAdmissionResolver(spec plan.ActionSpec, criteria []Fact, userInputs
 	admissionResolvers = append(admissionResolvers, AdmissionResolver{spec, criteria, userInputs})
 }
 
-type Rule func(string, *SourceCollector, mapset.Set[Fact]) (Fact, error)
+type Rule func(string, Collector, mapset.Set[Fact]) (Fact, error)
 
 type RulesetNode struct {
 	rule       *Rule
@@ -137,6 +148,6 @@ func NewRuleset() *Ruleset {
 
 var ruleset = NewRuleset()
 
-func addToRuleset(parent, child *Rule) {
+func AddToRuleset(parent, child *Rule) {
 	ruleset.append(parent, child)
 }

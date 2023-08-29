@@ -13,10 +13,11 @@ require (
 	github.com/go-git/go-git/v5 v5.8.1
 	github.com/golang-jwt/jwt/v4 v4.3.0
 	github.com/lithammer/shortuuid v3.0.0+incompatible
-	github.com/manifoldco/promptui v0.9.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.3
+	github.com/stripe/stripe-go v70.15.0+incompatible
+	github.com/stripe/stripe-go/v74 v74.29.0
 	go.mozilla.org/sops/v3 v3.7.3
 	golang.org/x/crypto v0.11.0
 	google.golang.org/api v0.126.0
@@ -56,7 +57,6 @@ require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/charmbracelet/lipgloss v0.7.1 // indirect
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
