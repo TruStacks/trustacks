@@ -10,6 +10,7 @@ import (
 	"dagger.io/dagger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/trustacks/pkg/engine"
+	"github.com/trustacks/pkg/engine/rules"
 	"github.com/trustacks/pkg/plan"
 	"gopkg.in/yaml.v2"
 )
@@ -45,7 +46,7 @@ var helmInstallStageAction = &plan.Action{
 		}
 		container = container.WithNewFile("/tmp/kubeconfig", dagger.ContainerWithNewFileOpts{Contents: args.KubernetesStagingKubeconfig, Permissions: 0600})
 		container = container.WithSecretVariable("KUBECONFIG", utils.SetSecret("kubeconfig", "/tmp/kubeconfig"))
-		container = container.WithExec([]string{"upgrade", chart["name"].(string), "--install", "--create-namespace", "--namespace", args.KubernetesNamespace, path.Dir(chartPath)})
+		container = container.WithExec([]string{"upgrade", chart["name"].(string), "--install", "--namespace", args.KubernetesNamespace, "--wait", "--wait-for-jobs", path.Dir(chartPath)})
 		_, err = container.Stdout(context.Background())
 		return err
 	},
@@ -64,7 +65,7 @@ func init() {
 			DisplayName: "Helm Install [Stage]",
 			Description: "Install the application into a kubernetes staging cluster with helm.",
 		},
-		[]engine.Fact{engine.HasHelmChartFact},
+		[]engine.Fact{rules.HelmChartExistsFact},
 		[]string{
 			string(plan.KubernetesStagingKubeconfig),
 			string(plan.KubernetesNamespace),

@@ -1,5 +1,5 @@
 ---
-title: Overview
+title: Stacks
 slug: /stacks
 sidebar_position: 1
 ---

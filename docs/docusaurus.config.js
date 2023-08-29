@@ -55,7 +55,7 @@ const config = {
         logo: {
           alt: 'TruStacks Logo',
           src: 'img/logo-dark.svg',
-          width: 165,
+          width: 150,
         },
         items: [
           {
@@ -72,6 +72,9 @@ const config = {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
       },
+      colorMode: {
+        defaultMode: 'dark'
+      }
     }),
 };
 

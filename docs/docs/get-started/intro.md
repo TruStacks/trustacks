@@ -1,19 +1,20 @@
 ---
-sidebar_position: 1
 title: Overview
+sidebar_position: 1
 ---
 
 # Get Started
 
 This guide will get your started using TruStacks.
 
+## Goals
+
+In this guide we will walk you through:
+
+1. Generating an action plan
+2. Configuration action plan inputs
+3. Running the action plan
+
 :::tip
-This guide will use the TruStacks SaaS to get you started quickly. Register for a trial account [here](https://trustacks.io) if you haven't already.
+☕ We've got a lot to cover, so grab a cup of coffee, tea, or a treat.
 :::
-
-## Action Plan
-
-Now that you have your account, we will create our first action plan.
-
-1. Create a new action plan by clicking on the "New Action" button on the top left of the page.
-2. 

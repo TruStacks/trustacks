@@ -4,6 +4,6 @@ title: Overview
 slug: /actions
 ---
 
-# Actions Overview
+# Actions
 
 Actions are the individual steps that make make up an action plan.

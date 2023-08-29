@@ -4,7 +4,7 @@
  * work well for content-centric websites.
  */
 
- @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap');
+ @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap');
 
 /* You can override the default Infima variables here. */
 :root {
@@ -37,4 +37,42 @@
   --ifm-font-color-base: #eee;
   --ifm-breadcrumb-color-active: var(--ifm-color-primary-light);
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.TrustacksWelcome {
+  border: 1px solid var(--ifm-color-primary-darkest);
+  border-radius: 10px;
+  display: inline-block;
+  padding: 30px;
+}
+
+.TrustacksButtonLink {
+  background: linear-gradient(90deg, #897DBB 0%, #76CABC 100%);
+  border: none;
+  border-bottom: 3px solid var(--ifm-color-primary-darker);
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-family: 'Montserrat';
+  font-size: 16px;
+  font-weight: 700;
+  padding: 10px 20px;
+  text-decoration: none;
+}
+
+.TrustacksButtonLink:hover {
+  background: var(--ifm-color-primary-dark);
+  color: white;
+  text-decoration: none;
+}
+
+.TrustacksSonarcloudNewButton {
+  background: rgb(209,215,254);
+  border: 0;
+  border-radius: 5px;
+  color: rgb(42,47,64);
+  font-size: 15px;
+  font-weight: bold;
+  margin: 0 3px;
+  padding: 3px 6px 4px 6px;
 }

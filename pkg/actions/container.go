@@ -8,6 +8,7 @@ import (
 	"dagger.io/dagger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/trustacks/pkg/engine"
+	"github.com/trustacks/pkg/engine/rules"
 	"github.com/trustacks/pkg/plan"
 )
 
@@ -70,7 +71,7 @@ func init() {
 			DisplayName: "Container Build",
 			Description: "Build a container image from the source Containerfile or Dockerfile.",
 		},
-		[]engine.Fact{engine.ContainerfileHasNoDependenciesFact},
+		[]engine.Fact{rules.ContainerfileHasNoDependenciesFact},
 		nil,
 	)
 	plan.RegisterAction(containerBuildAction)
@@ -81,7 +82,7 @@ func init() {
 			DisplayName: "Container Publish",
 			Description: "Publish the container to a container registry.",
 		},
-		[]engine.Fact{engine.ContainerfileExistFact},
+		[]engine.Fact{rules.ContainerfileExistFact},
 		[]string{
 			string(plan.ContainerRegistry),
 			string(plan.ContainerRegistryUsername),

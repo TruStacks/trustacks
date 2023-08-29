@@ -35,7 +35,7 @@ func init() {
 			DisplayName: "GolangCILint Run",
 			Description: "Lint the source with golangci-lint.",
 		},
-		[]engine.Fact{engine.GolangCILintExistsFact},
+		[]engine.Fact{},
 		nil,
 	)
 	plan.RegisterAction(golangCILintRun)

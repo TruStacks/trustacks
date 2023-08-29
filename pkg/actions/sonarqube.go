@@ -6,6 +6,7 @@ import (
 	"dagger.io/dagger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/trustacks/pkg/engine"
+	"github.com/trustacks/pkg/engine/rules"
 	"github.com/trustacks/pkg/plan"
 )
 
@@ -35,7 +36,7 @@ func init() {
 			Description: "Scan the source with the sonar scanner cli.",
 		},
 		[]engine.Fact{
-			engine.SonarProjectPropertiesExists,
+			rules.SonarProjectPropertiesExists,
 		},
 		[]string{
 			string(plan.SonarqubeToken),

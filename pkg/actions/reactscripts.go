@@ -6,6 +6,7 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/trustacks/pkg/engine"
+	"github.com/trustacks/pkg/engine/rules"
 	"github.com/trustacks/pkg/plan"
 )
 
@@ -53,7 +54,7 @@ func init() {
 			DisplayName: "React Scripts Test",
 			Description: "Run the test suite with react-scripts test.",
 		},
-		[]engine.Fact{engine.ReactScriptsTestExistsFact},
+		[]engine.Fact{rules.ReactScriptsTestExistsFact},
 		nil,
 	)
 	plan.RegisterAction(reactScriptsTestAction)
@@ -64,7 +65,7 @@ func init() {
 			DisplayName: "React Scripts Build",
 			Description: "Build production react assets with react-scripts build.",
 		},
-		[]engine.Fact{engine.ReactScriptsBuildExistsFact},
+		[]engine.Fact{rules.ReactScriptsBuildExistsFact},
 		nil,
 	)
 	plan.RegisterAction(reactScriptsBuildAction)
