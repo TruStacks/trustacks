@@ -14,7 +14,6 @@ var (
 	version                    string
 	planCmdName                string
 	planCmdSource              string
-	explainCmdPlan             string
 	explainCmdDocsURL          string
 	runCmdPlan                 string
 	runCmdInputsFile           string
@@ -57,7 +56,12 @@ var explainCmd = &cobra.Command{
 	Use:   "explain",
 	Short: "Explain an action plan",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := internal.ExplainCmd(explainCmdPlan, explainCmdDocsURL); err != nil {
+		if len(args) == 0 {
+			fmt.Println("path to plan is required")
+			os.Exit(1)
+		}
+		path := args[0]
+		if err := internal.ExplainCmd(path, explainCmdDocsURL); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -119,7 +123,6 @@ func main() {
 	planCmd.Flags().StringVar(&planCmdSource, "source", "./", "path to the application source")
 	rootCmd.AddCommand(planCmd)
 
-	explainCmd.Flags().StringVar(&explainCmdPlan, "plan", "", "path to the plan file")
 	explainCmd.Flags().StringVar(&explainCmdDocsURL, "docs", "https://docs.trustacks.io", "documentation url")
 	rootCmd.AddCommand(explainCmd)
 

@@ -237,31 +237,37 @@ func ExplainCmd(path, docsURL string) error {
 	if err := json.Unmarshal(data, &actionPlan); err != nil {
 		return err
 	}
-	fmt.Printf("\nActions\n-------\n\n")
-	for _, action := range actionPlan.Actions {
-		spec := engine.GetActionSpec(action.Name)
-		if spec != nil {
-			fmt.Printf(
-				"▸ %s - %s\n\n",
-				lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(spec.DisplayName),
-				spec.Description,
-			)
+	if len(actionPlan.Actions) > 0 {
+		fmt.Printf("\nActions\n-------\n\n")
+		for _, action := range actionPlan.Actions {
+			spec := engine.GetActionSpec(action.Name)
+			if spec != nil {
+				fmt.Printf(
+					"▸ %s - %s\n\n",
+					lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(spec.DisplayName),
+					spec.Description,
+				)
+			}
 		}
-	}
-	fmt.Printf("\nInputs\n------\n\n")
-	for _, input := range actionPlan.Fields {
-		spec := plan.GetInputSpec(input)
-		if spec == nil {
-			continue
+		if len(actionPlan.Fields) > 0 {
+			fmt.Printf("\nInputs\n------\n\n")
+			for _, input := range actionPlan.Fields {
+				spec := plan.GetInputSpec(input)
+				if spec == nil {
+					continue
+				}
+				fmt.Printf(
+					"▸ %s - %s\n%s\n",
+					lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(input),
+					fmt.Sprintf("%s/inputs/%s", docsURL, spec.Link()),
+					spec.Description(),
+				)
+			}
+			fmt.Println("Run the following command to generate a keyed input file for this plan")
+			fmt.Println(lipgloss.NewStyle().Render(fmt.Sprintf("\n  ⤷ tsctl stack init --from-plan %s\n", path)))
 		}
-		fmt.Printf(
-			"▸ %s - %s\n%s\n",
-			lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(input),
-			fmt.Sprintf("%s/inputs/%s", docsURL, spec.Link()),
-			spec.Description(),
-		)
+	} else {
+		fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("#FFBF00")).Render("* No actions could be generated from the provided source"))
 	}
-	fmt.Println("Run the following command to generate a keyed input file for this plan")
-	fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("yellow")).Render(fmt.Sprintf("\n  ⤷ tsctl stack init --from-plan %s\n", path)))
 	return nil
 }

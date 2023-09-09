@@ -26,6 +26,8 @@ tsctl plan --name <plan_name> --source <path_to_source>
 
 This will generate a plan file in the working directory named `<plan_name>.plan`
 
+<small>**Run `tsctl explain <plan_name>.plan` to get a detailed description of the action plan*.</small>
+
 ### Input
 
 Run the following command to generate stack inputs from the plan. The inputs contain credentials and parameters for your software delivery stack that will be used by actions in the action plan.
@@ -66,7 +68,7 @@ Run the following in a docker environment (local or CI/CD) from the root of your
 SOPS_AGE_KEY=<age_secret_key> tsctl run <plan_file> --source <path_to_source> --inputs <path_to_encrypted_inputs> --stages feedback
 ```
 
-<small>**Remove the `--stages` option to run the complete plan*</small>
+<small>**Remove the `--stages` option to run the complete plan*.</small>
 
 ## Progress
 
