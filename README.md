@@ -107,3 +107,5 @@ SOPS_AGE_KEY=<age_secret_key> tsctl run <plan_file> --source <path_to_source> --
 ### Contributing
 
 If you are interested in contributing to TruStacks please join our [Community](https://discord.gg/usgjQj7QTd) to get involved. 
+
+| <small>⚠ TruStacks is early alpha software and is not recommended for use in production systems. We provide provide no guarantees of API stability until we reach a stable v1.0+.</small>
