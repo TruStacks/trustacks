@@ -5,16 +5,17 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/trustacks/internal"
-	_ "github.com/trustacks/pkg/actions"
-	"github.com/trustacks/pkg/api"
-	_ "github.com/trustacks/pkg/engine/rules"
+	"github.com/trustacks/trustacks/internal"
+	_ "trustacks.io/trustacks/actions"
+	_ "trustacks.io/trustacks/engine/rules"
 )
 
 var (
 	version                    string
 	planCmdName                string
 	planCmdSource              string
+	explainCmdPlan             string
+	explainCmdDocsURL          string
 	runCmdPlan                 string
 	runCmdInputsFile           string
 	runCmdSource               string
@@ -23,8 +24,6 @@ var (
 	runCmdContext              string
 	stackInitializeCmdFromPlan string
 	stackInitializeCmdOutput   string
-	serverCmdHost              string
-	serverCmdPort              string
 	loginCmdUsername           string
 	loginCmdPassword           string
 	rootCmdServer              string
@@ -48,6 +47,17 @@ var planCmd = &cobra.Command{
 	Short: "Generate an action plan",
 	Run: func(cmd *cobra.Command, _ []string) {
 		if err := internal.RunPlan(planCmdSource, planCmdName); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	},
+}
+
+var explainCmd = &cobra.Command{
+	Use:   "explain",
+	Short: "Explain an action plan",
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := internal.ExplainCmd(explainCmdPlan, explainCmdDocsURL); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -85,17 +95,6 @@ var stackInitializeCmd = &cobra.Command{
 	},
 }
 
-var serverCmd = &cobra.Command{
-	Use:   "server",
-	Short: "start the api server",
-	Run: func(cmd *cobra.Command, _ []string) {
-		if err := api.StartServer(serverCmdHost, serverCmdPort); err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	},
-}
-
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "login to trustacks",
@@ -120,6 +119,10 @@ func main() {
 	planCmd.Flags().StringVar(&planCmdSource, "source", "./", "path to the application source")
 	rootCmd.AddCommand(planCmd)
 
+	explainCmd.Flags().StringVar(&explainCmdPlan, "plan", "", "path to the plan file")
+	explainCmd.Flags().StringVar(&explainCmdDocsURL, "docs", "https://docs.trustacks.io", "documentation url")
+	rootCmd.AddCommand(explainCmd)
+
 	runCmd.Flags().StringVar(&runCmdPlan, "plan", "", "name of a hosted action plan")
 	runCmd.Flags().StringVar(&runCmdSource, "source", "./", "application source path")
 	runCmd.Flags().StringVar(&runCmdInputsFile, "inputs", "inputs.yaml", "stack inputs file")
@@ -138,10 +141,6 @@ func main() {
 	stackInitializeCmd.Flags().StringVar(&stackInitializeCmdOutput, "output", "inputs.yaml", "inputs output path")
 	stackCmd.AddCommand(stackInitializeCmd)
 	rootCmd.AddCommand(stackCmd)
-
-	serverCmd.Flags().StringVar(&serverCmdHost, "host", "0.0.0.0", "server host")
-	serverCmd.Flags().StringVar(&serverCmdPort, "port", "8080", "server port")
-	rootCmd.AddCommand(serverCmd)
 
 	loginCmd.Flags().StringVar(&loginCmdUsername, "username", "", "login username")
 	if err := loginCmd.MarkFlagRequired("username"); err != nil {

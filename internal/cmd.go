@@ -9,11 +9,12 @@ import (
 	"path/filepath"
 
 	"dagger.io/dagger"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/filecoin-project/go-jsonrpc"
-	"github.com/trustacks/pkg/engine"
-	"github.com/trustacks/pkg/plan"
 	"go.mozilla.org/sops/v3/decrypt"
 	"gopkg.in/yaml.v2"
+	"trustacks.io/trustacks/engine"
+	"trustacks.io/trustacks/plan"
 )
 
 func RunPlan(source, name string) error {
@@ -140,7 +141,7 @@ func getHostedSpec(planName, contextName, server string) (map[string]interface{}
 	return planData, sourceSubpath, nil
 }
 
-func RunCmd(source, planName, planFile, inputsFile, contextName, server string, phases []string, force bool) error {
+func RunCmd(source, planName, planFile, inputsFile, contextName, server string, stages []string, force bool) error {
 	var err error
 	var planData map[string]interface{}
 	if planFile != "" {
@@ -164,7 +165,7 @@ func RunCmd(source, planName, planFile, inputsFile, contextName, server string, 
 	if err != nil {
 		return err
 	}
-	if err := plan.Run(source, string(spec), client, phases); err != nil {
+	if err := plan.Run(source, string(spec), client, stages); err != nil {
 		return err
 	}
 	return nil
@@ -182,8 +183,12 @@ func StackInitializeCmd(planFile, output string) error {
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		return fmt.Errorf("error: %s already exists", output)
 	}
-	if _, ok := plan["inputs"]; ok {
-		data, err := yaml.Marshal(plan["inputs"])
+	if _, ok := plan["fields"]; ok {
+		inputs := map[string]interface{}{}
+		for _, field := range plan["fields"].([]interface{}) {
+			inputs[field.(string)] = nil
+		}
+		data, err := yaml.Marshal(inputs)
 		if err != nil {
 			return err
 		}
@@ -220,5 +225,43 @@ func LoginCmd(host, username, password string) error {
 		return err
 	}
 	fmt.Println("login successful")
+	return nil
+}
+
+func ExplainCmd(path, docsURL string) error {
+	var actionPlan plan.ActionPlan
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, &actionPlan); err != nil {
+		return err
+	}
+	fmt.Printf("\nActions\n-------\n\n")
+	for _, action := range actionPlan.Actions {
+		spec := engine.GetActionSpec(action.Name)
+		if spec != nil {
+			fmt.Printf(
+				"▸ %s - %s\n\n",
+				lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(spec.DisplayName),
+				spec.Description,
+			)
+		}
+	}
+	fmt.Printf("\nInputs\n------\n\n")
+	for _, input := range actionPlan.Fields {
+		spec := plan.GetInputSpec(input)
+		if spec == nil {
+			continue
+		}
+		fmt.Printf(
+			"▸ %s - %s\n%s\n",
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(input),
+			fmt.Sprintf("%s/inputs/%s", docsURL, spec.Link()),
+			spec.Description(),
+		)
+	}
+	fmt.Println("Run the following command to generate a keyed input file for this plan")
+	fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("yellow")).Render(fmt.Sprintf("\n  ⤷ tsctl stack init --from-plan %s\n", path)))
 	return nil
 }

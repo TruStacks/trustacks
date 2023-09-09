@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"dagger.io/dagger"
-	"github.com/trustacks/pkg/engine"
-	"github.com/trustacks/pkg/plan"
+	"trustacks.io/trustacks/plan"
 )
 
 var golangTest = &plan.Action{
@@ -20,22 +19,22 @@ var golangTest = &plan.Action{
 	},
 }
 
-func init() {
-	engine.RegisterPatternMatches([]engine.PatternMatch{
-		{
-			Kind:       engine.FilePatternMatch,
-			Pattern:    "_test.go",
-			Exclusions: &[]string{"testdata", "vendor"},
-		},
-	})
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        golangTest.Name,
-			DisplayName: "Golang Test",
-			Description: "Run the test suite with go test.",
-		},
-		[]engine.Fact{},
-		nil,
-	)
-	plan.RegisterAction(golangTest)
-}
+// func init() {
+// 	engine.RegisterPatternMatches([]engine.PatternMatch{
+// 		{
+// 			Kind:       engine.FilePatternMatch,
+// 			Pattern:    "_test.go",
+// 			Exclusions: &[]string{"testdata", "vendor"},
+// 		},
+// 	})
+// 	engine.RegisterAdmissionResolver(
+// 		plan.ActionSpec{
+// 			Name:        golangTest.Name,
+// 			DisplayName: "Golang Test",
+// 			Description: "Run the test suite with go test.",
+// 		},
+// 		[]engine.Fact{},
+// 		nil,
+// 	)
+// 	plan.RegisterAction(golangTest)
+// }

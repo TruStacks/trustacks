@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/trustacks/pkg/engine"
 	"gopkg.in/yaml.v2"
+	"trustacks.io/trustacks/engine"
 )
 
 type helmTestCollector struct {

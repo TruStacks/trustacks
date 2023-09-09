@@ -2,7 +2,7 @@ package engine
 
 import (
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/trustacks/pkg/plan"
+	"trustacks.io/trustacks/plan"
 )
 
 type Engine struct {
@@ -68,6 +68,15 @@ type AdmissionResolver struct {
 
 func RegisterAdmissionResolver(spec plan.ActionSpec, criteria []Fact, userInputs []string) {
 	admissionResolvers = append(admissionResolvers, AdmissionResolver{spec, criteria, userInputs})
+}
+
+func GetActionSpec(name string) *plan.ActionSpec {
+	for _, resolver := range admissionResolvers {
+		if resolver.spec.Name == name {
+			return &resolver.spec
+		}
+	}
+	return nil
 }
 
 type Rule func(string, Collector, mapset.Set[Fact]) (Fact, error)

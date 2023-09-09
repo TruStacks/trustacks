@@ -9,10 +9,10 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/mitchellh/mapstructure"
-	"github.com/trustacks/pkg/engine"
-	"github.com/trustacks/pkg/engine/rules"
-	"github.com/trustacks/pkg/plan"
 	"gopkg.in/yaml.v2"
+	"trustacks.io/trustacks/engine"
+	"trustacks.io/trustacks/engine/rules"
+	"trustacks.io/trustacks/plan"
 )
 
 var helmInstallStageAction = &plan.Action{

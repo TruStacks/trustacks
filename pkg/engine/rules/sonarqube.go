@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/trustacks/pkg/engine"
+	"trustacks.io/trustacks/engine"
 )
 
 var (

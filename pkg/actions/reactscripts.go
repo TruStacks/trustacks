@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 
 	"dagger.io/dagger"
-	"github.com/trustacks/pkg/engine"
-	"github.com/trustacks/pkg/engine/rules"
-	"github.com/trustacks/pkg/plan"
+	"trustacks.io/trustacks/engine"
+	"trustacks.io/trustacks/engine/rules"
+	"trustacks.io/trustacks/plan"
 )
 
 var reactScriptsTestAction = &plan.Action{

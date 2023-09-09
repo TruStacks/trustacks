@@ -249,12 +249,16 @@ func Run(source, spec string, client *dagger.Client, stages []string) error {
 	if err != nil {
 		return err
 	}
-	for _, actions := range schedule {
-		for _, action := range actions {
-			log.Info(fmt.Sprintf("> %s", action.Name))
+	stages = append([]string{"null"}, stages...)
+	for stage, actions := range schedule {
+		for _, stg := range stages {
+			if stg == actionStages[stage] {
+				for _, action := range actions {
+					log.Info(fmt.Sprintf("> %s", action.Name))
+				}
+			}
 		}
 	}
-	stages = append([]string{"null"}, stages...)
 	for stageId, key := range actionStages {
 		for _, name := range stages {
 			if key == name {

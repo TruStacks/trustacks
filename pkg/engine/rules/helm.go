@@ -4,8 +4,8 @@ import (
 	"os"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/trustacks/pkg/engine"
 	"gopkg.in/yaml.v2"
+	"trustacks.io/trustacks/engine"
 )
 
 var (

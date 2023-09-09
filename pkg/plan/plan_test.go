@@ -41,6 +41,7 @@ func TestBindActionInputs(t *testing.T) {
 	s.bindActionInputs(assignments)
 	assert.True(t, s.requiredInputs[mockArtifact].Contains(StageStage))
 }
+
 func TestFindOptionalInputOccurances(t *testing.T) {
 	var mockArtifact Artifact = 1
 	assignments := map[Stage]mapset.Set[*Action]{

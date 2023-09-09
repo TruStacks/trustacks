@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"dagger.io/dagger"
-	"github.com/trustacks/pkg/engine"
-	"github.com/trustacks/pkg/plan"
+	"trustacks.io/trustacks/plan"
 )
 
 var golangCILintRun = &plan.Action{
@@ -28,15 +27,15 @@ var golangCILintRun = &plan.Action{
 	},
 }
 
-func init() {
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        golangCILintRun.Name,
-			DisplayName: "GolangCILint Run",
-			Description: "Lint the source with golangci-lint.",
-		},
-		[]engine.Fact{},
-		nil,
-	)
-	plan.RegisterAction(golangCILintRun)
-}
+// func init() {
+// 	engine.RegisterAdmissionResolver(
+// 		plan.ActionSpec{
+// 			Name:        golangCILintRun.Name,
+// 			DisplayName: "GolangCILint Run",
+// 			Description: "Lint the source with golangci-lint.",
+// 		},
+// 		[]engine.Fact{},
+// 		nil,
+// 	)
+// 	plan.RegisterAction(golangCILintRun)
+// }

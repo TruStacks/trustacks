@@ -1,6 +1,6 @@
 package rules
 
-import "github.com/trustacks/pkg/engine"
+import "trustacks.io/trustacks/engine"
 
 var (
 	CypressE2ESourcesExist = engine.NewFact()
