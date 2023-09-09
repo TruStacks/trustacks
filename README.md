@@ -72,7 +72,7 @@ SOPS_AGE_KEY=<age_secret_key> tsctl run <plan_file> --source <path_to_source> --
 
 ## Project Catalyst
 
-Catalyst is the current project the ecompasses the core engine features of TruStacks. The status of current and planned features is below.
+[Catalyst](https://github.com/orgs/TruStacks/projects/2) is the current project the ecompasses the core engine features of TruStacks. The status of current and planned features is below.
 
 #### Frameworks
 
