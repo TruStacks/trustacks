@@ -36,7 +36,7 @@ Run the following command to generate stack inputs from the plan. The inputs con
 tsctl stack init --from-plan <plan_name>.plan
 ```
 
-Thie will generate an input file in the working directory named `inputs.yaml` with the keys and null values for the required inputs.
+This will generate an input file in the working directory named `inputs.yaml` with the keys and null values for the required inputs.
 
 | <small>⚠ *DO NOT MODIFY INPUT KEYS*</small>
 
@@ -52,7 +52,7 @@ Run the following commands to encrypt your inputs
 age-keygen -o key.txt
 ```
 
-2. Encrypt your stack inputs file using the public key from the key.txt
+2. Encrypt your stack inputs file using the public key from the *key.txt* file
 
 ```bash
 sops -e -i --age <age_public_key> inputs.yaml
@@ -70,8 +70,9 @@ SOPS_AGE_KEY=<age_secret_key> tsctl run <plan_file> --source <path_to_source> --
 
 <small>**Remove the `--stages` option to run the complete plan*.</small>
 
-## Progress
+## Project Catalyst
 
+Catalyst is the current project the ecompasses the core engine features of TruStacks. The status of current and planned features is below.
 
 #### Frameworks
 
@@ -102,3 +103,7 @@ SOPS_AGE_KEY=<age_secret_key> tsctl run <plan_file> --source <path_to_source> --
 |Trivy Container Scan|✅|
 |Cypress|❌|
 |ArgoCD Sync|❌|
+
+### Contributing
+
+If you are interested in contributing to TruStacks please join our [Community](https://discord.gg/usgjQj7QTd) to get involved. 
