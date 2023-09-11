@@ -142,7 +142,7 @@ The command should return the following output:
 
 ### SonarCloud
 
-Sign up for a [SonarCloud](sonarcloud.io) account.
+Sign up for a [SonarCloud](https://sonarcloud.io) account.
 
 After signing up, click the <button className="TrustacksSonarcloudNewButton">+</button> at the top right of the page and select **Analyze new project**
 
