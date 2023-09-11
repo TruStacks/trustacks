@@ -8,21 +8,51 @@ slug: /get-started/setup
 
 This part of the guide will get your environment set up for running an action plan.
 
-:::info
-This guide uses hosted TruStacks to get you started quickly. Register for a trial account [here](https://trustacks-website.web.app/#pricing) if you haven't already.
-:::
-
 ## TruStacks Setup
 
 TruStacks requires [docker](https://www.docker.com/) to run action plans and [age](https://github.com/FiloSottile/age/releases) for input encryption at rest.
 
 Follow the instructions below to get those tools installed and configured.
 
-### Docker
+### CLI
 
+Download the latest TruStacks cli binary [here](https://github.com/TruStacks/trustacks/releases/tag/v0.1.0)
+
+Place the binary on your path and run the following command:
+
+```
+tsctl -h
+```
+
+The output should display the TruStacks cli usage:
+
+```
+Trustacks software delivery engine
+
+Usage:
+  tsctl [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  login       login to trustacks
+  plan        Generate an action plan
+  run         Run an action plan
+  server      start the api server
+  stack       manage input stacks
+  version     Show the cli version
+
+Flags:
+  -h, --help            help for tsctl
+      --server string   rpc server host
+
+Use "tsctl [command] --help" for more information about a command.
+```
+### Docker
 
 Follow the instructions [here](https://docs.docker.com/engine/install/) to install docker on your machine.
 
+<!---
 #### Validate docker
 
 Run the following command to validate your docker installation.
@@ -59,6 +89,7 @@ Use "tsctl [command] --help" for more information about a command.
 :::caution
 TruStacks is not tested with other OCI runtimes such as podman or runc. They are not likely to work without additional modifications.
 :::
+-->
 
 ### Age
 
@@ -142,7 +173,7 @@ The command should return the following output:
 
 ### SonarCloud
 
-Sign up for a [SonarCloud](sonarcloud.io) account.
+Sign up for a [SonarCloud](https://sonarcloud.io) account.
 
 After signing up, click the <button className="TrustacksSonarcloudNewButton">+</button> at the top right of the page and select **Analyze new project**
 

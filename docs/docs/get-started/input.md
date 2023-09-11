@@ -8,6 +8,12 @@ title: Input
 
 This part of the guide will walk through setting up action inputs
 
+### What are stack inputs?
+
+Stack inputs are user-defined parameters and credentials that are used in action plans to complete the delivery of an application.
+
+<!---
+
 ## Stacks
 
 To get started with inputs click the stack icon beside the **New Action Plan** button.
@@ -64,4 +70,40 @@ Examples of application inputs are:
 Use Stack inputs if you are defining inputs that are shared between applications and use application inputs if you defining inputs for a single application.
 :::
 
+-->
+
 ### Entering Stack Inputs
+
+##### Using Age
+
+Inputs must be encyrpted before being used in action plans. Run the following command to create an age key pair:
+
+```
+age-keygen -o key.txt
+```
+
+Keep this key handy for the next step.
+
+#### Generate a stack input file
+
+Before we populate stack inputs we need to generate the appropriate input keys.
+
+TruStacks provides a helper command to generate a keyed input file from an existing plan. Run the following command to generate a new input file:
+
+```
+tsctl stack init --from-plan trustacks-react-sample.plan
+```
+
+A file named `inputs.yaml` is placed on the filesystem. You can now populate the keys with the appropriate values.
+
+:::tip
+Run `tsctl explain trutacks-react-sample.plan` to view a detailed description of the action plan. The inputs section will contain documentation links for all included inputs with more information.
+:::
+
+After populating the input values run the following command to encrypt the inputs file:
+
+```
+sops -e -i --age <age_public_key> inputs.yaml
+```
+
+Your inputs file should now be encrypted, and you are ready to move on to the next step.

@@ -21,6 +21,7 @@ To get started, [fork](https://github.com/TruStacks/react-sample/fork) the sampl
 
 ### Generate the action plan
 
+<!--- // TODO: uncomment for trustacks cloud
 In the TruStacks web console, click the **New Action Plan** button in the option bar. Enter the url of your repo fork.
 
 <Tabs
@@ -49,6 +50,13 @@ The sub-path input allows for a single repo to have multiple action plan targets
 
 *Monorepos will be covered in detail in the core concepts*.
 :::
+-->
+
+Clone the forked repo and run the following command from the root of the source:
+
+```
+tsctl plan --name trustacks-react-sample
+```
 
 After a few seconds, the action plan will be generated and you should now have an action plan in your action plans list named `trustacks-react-sample` (unless you renamed your fork).
 
