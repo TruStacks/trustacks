@@ -19,11 +19,44 @@ Follow the instructions below to get those tools installed and configured.
 Download the latest TruStacks cli binary [here](https://github.com/TruStacks/trustacks/releases/tag/v0.1.0)
 
 Place the binary on your path and run the following command:
-<<<<<<< HEAD:docs/docs/.get-started/setup.md
 
 ```
 tsctl -h
 ```
+
+The output should display the TruStacks cli usage:
+
+```
+Trustacks software delivery engine
+
+Usage:
+  tsctl [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  login       login to trustacks
+  plan        Generate an action plan
+  run         Run an action plan
+  server      start the api server
+  stack       manage input stacks
+  version     Show the cli version
+
+Flags:
+  -h, --help            help for tsctl
+      --server string   rpc server host
+
+Use "tsctl [command] --help" for more information about a command.
+```
+### Docker
+
+Place the binary on your path and run the following command:
+```
+tsctl -h
+```
+=======
+<!---
+#### Validate docker
 
 The output should display the TruStacks cli usage:
 
@@ -67,7 +100,6 @@ Available Commands:
   stack       manage input stacks
   version     Show the cli version
 
->>>>>>> 4e23f1a6b3cb2013ade63f37b6ccd3806524ffb0:docs/docs/get-started/setup.md
 Flags:
   -h, --help            help for tsctl
       --server string   rpc server host
@@ -77,6 +109,15 @@ Use "tsctl [command] --help" for more information about a command.
 ### Docker
 
 Follow the instructions [here](https://docs.docker.com/engine/install/) to install docker on your machine.
+=======
+:::caution
+TruStacks is not tested with other OCI runtimes such as podman or runc. They are not likely to work without additional modifications.
+:::
+-->
+
+### Age
+
+[Age](https://github.com/FiloSottile/age/releases) keys are used to encrypt [Stack Inputs](/stacks) at rest. Get the latest age release for your machine [here](https://github.com/FiloSottile/age/releases) and are not recommended.
 
 <!---
 #### Validate docker

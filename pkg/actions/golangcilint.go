@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"dagger.io/dagger"
-	"trustacks.io/trustacks/plan"
+	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 var golangCILintRun = &plan.Action{

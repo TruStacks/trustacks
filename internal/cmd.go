@@ -11,10 +11,10 @@ import (
 	"dagger.io/dagger"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/filecoin-project/go-jsonrpc"
+	"github.com/trustacks/trustacks/pkg/engine"
+	"github.com/trustacks/trustacks/pkg/plan"
 	"go.mozilla.org/sops/v3/decrypt"
 	"gopkg.in/yaml.v2"
-	"trustacks.io/trustacks/engine"
-	"trustacks.io/trustacks/plan"
 )
 
 func RunPlan(source, name string) error {
