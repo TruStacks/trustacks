@@ -50,7 +50,74 @@ Use "tsctl [command] --help" for more information about a command.
 ```
 ### Docker
 
+Place the binary on your path and run the following command:
+```
+tsctl -h
+```
+=======
+<!---
+#### Validate docker
+
+The output should display the TruStacks cli usage:
+
+```
+Trustacks software delivery engine
+
+Usage:
+  tsctl [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  login       login to trustacks
+  plan        Generate an action plan
+  run         Run an action plan
+  server      start the api server
+  stack       manage input stacks
+  version     Show the cli version
+
+=======
+
+```
+tsctl -h
+```
+
+The output should display the TruStacks cli usage:
+
+```
+Trustacks software delivery engine
+
+Usage:
+  tsctl [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  login       login to trustacks
+  plan        Generate an action plan
+  run         Run an action plan
+  server      start the api server
+  stack       manage input stacks
+  version     Show the cli version
+
+Flags:
+  -h, --help            help for tsctl
+      --server string   rpc server host
+
+Use "tsctl [command] --help" for more information about a command.
+```
+### Docker
+
 Follow the instructions [here](https://docs.docker.com/engine/install/) to install docker on your machine.
+=======
+:::caution
+TruStacks is not tested with other OCI runtimes such as podman or runc. They are not likely to work without additional modifications.
+:::
+-->
+
+### Age
+
+[Age](https://github.com/FiloSottile/age/releases) keys are used to encrypt [Stack Inputs](/stacks) at rest. Get the latest age release for your machine [here](https://github.com/FiloSottile/age/releases) and are not recommended.
 
 <!---
 #### Validate docker
@@ -93,44 +160,18 @@ TruStacks is not tested with other OCI runtimes such as podman or runc. They are
 
 ### Age
 
-[Age](https://github.com/FiloSottile/age/releases) keys are used to encrypt [Stack Inputs](/stacks) at rest. Get the latest age release for your machine [here](https://github.com/FiloSottile/age/releases) and are not recommended.
+[Age](https://github.com/FiloSottile/age/releases) keys are used to encrypt [Stack Inputs](/stacks) at rest. Get the latest age release for your machine [here](https://github.com/FiloSottile/age/releases).
 
-#### Validate age
 
-Run the following command to validate age:
+### Sops
 
-```
-age-keygen -h
-```
-
-The output should the age cli usage:
-
-```
-Usage:
-    age-keygen [-o OUTPUT]
-    age-keygen -y [-o OUTPUT] [INPUT]
-
-Options:
-    -o, --output OUTPUT       Write the result to the file at path OUTPUT.
-    -y                        Convert an identity file to a recipients file.
-
-age-keygen generates a new native X25519 key pair, and outputs it to
-standard output or to the OUTPUT file.
-
-If an OUTPUT file is specified, the public key is printed to standard error.
-If OUTPUT already exists, it is not overwritten.
-
-In -y mode, age-keygen reads an identity file from INPUT or from standard
-input and writes the corresponding recipient(s) to OUTPUT or to standard
-output, one per line, with no comments.
-...
-```
+[Sops](https://github.com/getsops/sops.git) is used to encrypt secrets at rest with an age public key. Get the latest sops release for your machine [here](https://github.com/getsops/sops/releases/download/v3.7.3/sops-v3.7.3.linux.amd64)
 
 ## Action Plan Setup
 
 The sample app is a react application that will be deployed on kubernetes.
 
-Follow the instructions below to configure the local k8s cluster and additional services for the action plan.
+Follow the instructions below to configure a local k8s cluster and additional services for the action plan.
 
 ### k3d
 

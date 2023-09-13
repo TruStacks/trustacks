@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/trustacks/trustacks/internal"
-	_ "trustacks.io/trustacks/actions"
-	_ "trustacks.io/trustacks/engine/rules"
+	_ "github.com/trustacks/trustacks/pkg/actions"
+	_ "github.com/trustacks/trustacks/pkg/engine/rules"
 )
 
 var (

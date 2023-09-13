@@ -2,7 +2,7 @@ package engine
 
 import (
 	mapset "github.com/deckarep/golang-set/v2"
-	"trustacks.io/trustacks/plan"
+	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 type Engine struct {

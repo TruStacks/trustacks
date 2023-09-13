@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"dagger.io/dagger"
-	"trustacks.io/trustacks/plan"
+	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 var golangTest = &plan.Action{

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"dagger.io/dagger"
-	"trustacks.io/trustacks/engine"
-	"trustacks.io/trustacks/engine/rules"
-	"trustacks.io/trustacks/plan"
+	"github.com/trustacks/trustacks/pkg/engine"
+	"github.com/trustacks/trustacks/pkg/engine/rules"
+	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 var trivyImageAction = &plan.Action{
