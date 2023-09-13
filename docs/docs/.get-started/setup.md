@@ -19,6 +19,7 @@ Follow the instructions below to get those tools installed and configured.
 Download the latest TruStacks cli binary [here](https://github.com/TruStacks/trustacks/releases/tag/v0.1.0)
 
 Place the binary on your path and run the following command:
+<<<<<<< HEAD:docs/docs/.get-started/setup.md
 
 ```
 tsctl -h
@@ -42,6 +43,31 @@ Available Commands:
   stack       manage input stacks
   version     Show the cli version
 
+=======
+
+```
+tsctl -h
+```
+
+The output should display the TruStacks cli usage:
+
+```
+Trustacks software delivery engine
+
+Usage:
+  tsctl [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  login       login to trustacks
+  plan        Generate an action plan
+  run         Run an action plan
+  server      start the api server
+  stack       manage input stacks
+  version     Show the cli version
+
+>>>>>>> 4e23f1a6b3cb2013ade63f37b6ccd3806524ffb0:docs/docs/get-started/setup.md
 Flags:
   -h, --help            help for tsctl
       --server string   rpc server host
