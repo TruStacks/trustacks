@@ -12,7 +12,7 @@ This guide will get your started using TruStacks.
 In this guide we will walk you through:
 
 1. Generating an action plan
-2. Configuration action plan inputs
+2. Configuring action plan inputs
 3. Running the action plan
 
 :::tip

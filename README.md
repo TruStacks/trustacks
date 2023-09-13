@@ -2,19 +2,19 @@
 
 ## What is TruStacks?
 
-TruStacks is a pipeless software delivery engine that removes the need to build pipelines.
+TruStacks is a generative software delivery engine that removes the need to build pipelines.
 
-#### Pipeless Sofware Delivery
+#### Generative Sofware Delivery
 
 *Intermediary Wiring* is the pipeline code that sits between the source and the delivered product that is typically implemented with yaml or other no-code DSL's.
 
-Pipeless software delivery (PSD) works without intermediary wiring. TruStacks accomplishes PSD through action plans, bundles of actions determined by rules applied to source facts, so that developers can go from source to deployment with no intermediary wiring.
+TruStacks uses a rule engine to generate actions plans that contain actions based on discovered facts in the application sources.
 
 ## Usage
 
 ### Installation
 
-Download the latest release [here](https://github.com/TruStacks/trustacks/releases)
+Download the latest release [here](https://github.com/trustacks/trustacks/pkg/releases)
 
 ### Plan
 
