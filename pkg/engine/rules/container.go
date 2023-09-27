@@ -55,6 +55,6 @@ var containerfileHasNoDependenciesRule engine.Rule = func(source string, _ engin
 
 func init() {
 	engine.AddToRuleset(&containerfileExistsRule, &containerfileHasNoDependenciesRule)
-	engine.AddToRuleset(&reactScriptsBuildExsitsRule, &containerfileExistsRule)
+	engine.AddToRuleset(&npmBuildExsitsRule, &containerfileExistsRule)
 	engine.AddToRuleset(&expressDependencyExistsRule, &containerfileExistsRule)
 }

@@ -5,12 +5,14 @@ import (
 	"fmt"
 
 	"dagger.io/dagger"
+	"github.com/trustacks/trustacks/pkg/engine"
+	"github.com/trustacks/trustacks/pkg/engine/rules"
 	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 var golangCILintRun = &plan.Action{
 	Name:   "golangCILintRun",
-	Image:  "golang:alpine",
+	Image:  func(_ *plan.Config) string { return "golang:alpine" },
 	Stage:  plan.FeedbackStage,
 	Caches: []string{"/go/pkg/mod"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
@@ -27,15 +29,16 @@ var golangCILintRun = &plan.Action{
 	},
 }
 
-// func init() {
-// 	engine.RegisterAdmissionResolver(
-// 		plan.ActionSpec{
-// 			Name:        golangCILintRun.Name,
-// 			DisplayName: "GolangCILint Run",
-// 			Description: "Lint the source with golangci-lint.",
-// 		},
-// 		[]engine.Fact{},
-// 		nil,
-// 	)
-// 	plan.RegisterAction(golangCILintRun)
-// }
+func init() {
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        golangCILintRun.Name,
+			DisplayName: "GolangCILint Run",
+			Description: "Lint the source with golangci-lint.",
+		},
+		[]engine.Fact{rules.GolangCILintConfigExistsFact},
+		nil,
+		nil,
+	)
+	plan.RegisterAction(golangCILintRun)
+}

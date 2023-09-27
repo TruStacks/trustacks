@@ -12,17 +12,17 @@ import (
 
 var sonarScannerCLIScan = &plan.Action{
 	Name:  "sonarScannerCLIScan",
-	Image: "sonarsource/sonar-scanner-cli",
+	Image: func(_ *plan.Config) string { return "sonarsource/sonar-scanner-cli" },
 	Stage: plan.FeedbackStage,
 	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *plan.ActionUtilities) error {
 		args := struct {
-			SonarqubeToken string
+			SONARQUBE_TOKEN string
 		}{}
 		if err := mapstructure.Decode(inputs, &args); err != nil {
 			return err
 		}
 		_, err := container.
-			WithSecretVariable("SONAR_TOKEN", utils.SetSecret("sonarqubeToken", args.SonarqubeToken)).
+			WithSecretVariable("SONAR_TOKEN", utils.SetSecret("sonarqubeToken", args.SONARQUBE_TOKEN)).
 			Stdout(context.Background())
 		return err
 	},
@@ -38,6 +38,7 @@ func init() {
 		[]engine.Fact{
 			rules.SonarProjectPropertiesExists,
 		},
+		nil,
 		[]string{
 			string(plan.SonarqubeToken),
 		},

@@ -11,7 +11,7 @@ import (
 
 var eslintRunAction = &plan.Action{
 	Name:   "eslintRun",
-	Image:  "node:alpine",
+	Image:  func(_ *plan.Config) string { return "node:alpine" },
 	Stage:  plan.FeedbackStage,
 	Caches: []string{"/src/node_modules"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, utils *plan.ActionUtilities) error {
@@ -31,6 +31,7 @@ func init() {
 			Description: "Lint the source with ESLint.",
 		},
 		[]engine.Fact{rules.ESLintConfigExistsFact},
+		nil,
 		nil,
 	)
 	plan.RegisterAction(eslintRunAction)

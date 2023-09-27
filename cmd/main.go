@@ -16,11 +16,9 @@ var (
 	planCmdSource              string
 	explainCmdDocsURL          string
 	runCmdPlan                 string
-	runCmdInputsFile           string
 	runCmdSource               string
 	runCmdStages               []string
 	runCmdForce                bool
-	runCmdContext              string
 	stackInitializeCmdFromPlan string
 	stackInitializeCmdOutput   string
 	loginCmdUsername           string
@@ -76,7 +74,7 @@ var runCmd = &cobra.Command{
 		if len(args) > 0 {
 			planFile = args[0]
 		}
-		if err := internal.RunCmd(runCmdSource, runCmdPlan, planFile, runCmdInputsFile, runCmdContext, rootCmdServer, runCmdStages, runCmdForce); err != nil {
+		if err := internal.RunCmd(runCmdSource, runCmdPlan, planFile, rootCmdServer, runCmdStages, runCmdForce); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -128,8 +126,6 @@ func main() {
 
 	runCmd.Flags().StringVar(&runCmdPlan, "plan", "", "name of a hosted action plan")
 	runCmd.Flags().StringVar(&runCmdSource, "source", "./", "application source path")
-	runCmd.Flags().StringVar(&runCmdInputsFile, "inputs", "inputs.yaml", "stack inputs file")
-	runCmd.Flags().StringVar(&runCmdContext, "context", "default", "input context from a hosted action plan")
 	runCmd.Flags().BoolVar(&runCmdForce, "force", false, "plan and execute in one command")
 	runCmd.Flags().StringSliceVar(&runCmdStages, "stages", []string{"feedback", "package", "stage", "qa"}, "activity phases to run during the action plan")
 	runCmd.Flags().StringVar(&rootCmdServer, "server", "", "rpc server host")
@@ -141,7 +137,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	stackInitializeCmd.Flags().StringVar(&stackInitializeCmdOutput, "output", "inputs.yaml", "inputs output path")
+	stackInitializeCmd.Flags().StringVar(&stackInitializeCmdOutput, "output", "inputs.env", "inputs output path")
 	stackCmd.AddCommand(stackInitializeCmd)
 	rootCmd.AddCommand(stackCmd)
 
