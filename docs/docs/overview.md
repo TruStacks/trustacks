@@ -1,15 +1,7 @@
 ---
-sidebar_position: 1
-title: Introduction
-slug: /
+title: Overview
+sidebar_position: 3
 ---
-
-# Welcome to TruStacks
-
-<div className="TrustacksWelcome">
-    <p>Welcome to the TruStacks docs! Click below to get started.</p>
-    <a href="quickstart" className="TrustacksButtonLink">Quickstart</a>
-</div>
 
 ## What is TruStacks?
 
@@ -45,6 +37,6 @@ Inputs must be populated before executing the action plan.
 
 Actions admitted into an action plan are naive with no specific order. The scheduler places rules in appropriate order based on action classification and artifacts. 
 
-Rules can be classified in a fixed stage, or selected for execution in a stage at runtime by the scheduler as "feeder" actions. Feeder actions exist only to provide inputs to a downstream action such as a container build action that "feeds" the output image to a vulnerability scan or image publish action.
+Rules can be generally classified in a fixed stage, or selected for execution in a stage at runtime by the scheduler as "feeder" actions. Feeder actions exist only to provide inputs to a downstream action such as a container build step that "feeds" the output image to a vulnerability scan or image publish step.
 
 The scheduler ensures that actions between stages and inner stage are executed in the order of the required inputs. If no input is required by a given action the scheduler will run the action at whatever point it is introduced into the schedule.
