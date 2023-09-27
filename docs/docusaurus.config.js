@@ -59,9 +59,10 @@ const config = {
         },
         items: [
           {
-            href: 'https://github.com/trustacks',
-            label: 'GitHub',
+            href: 'https://github.com/trustacks/trustacks',
             position: 'right',
+            className: 'header-github-link',
+            'aria-label': 'GitHub repository',
           },
         ],
       },

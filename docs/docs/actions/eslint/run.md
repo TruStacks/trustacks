@@ -24,22 +24,10 @@ See [Configuration File Formats](https://eslint.org/docs/latest/use/configure/co
 
 #### Nested configuration
 
-If you have nested sources with alternative ESLint configurations use the `root: true` option in your top-level ESLint configuration file to disable the nest config. 
+If you have nested sources with individual ESLint configurations use the `root: true` option in your top-level ESLint configuration file to disable nested configs. 
 
 See [Cascading and Hierarchy](https://eslint.org/docs/latest/use/configure/ignore) for more details.
 
 :::tip
 [Ignore nested source files](https://eslint.org/docs/latest/use/configure/ignore) that require alternative ESLint configurations to avoid unnecessary failures.
 :::
-
-### Artifacts
-
-#### Input:
-
-N/A
-
-#### Output:
-
-|Name|Type|Description|
-|-|-|-|
-|dist|dir|The production react application build distribution|

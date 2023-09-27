@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,8 +14,6 @@ import (
 	"github.com/filecoin-project/go-jsonrpc"
 	"github.com/trustacks/trustacks/pkg/engine"
 	"github.com/trustacks/trustacks/pkg/plan"
-	"go.mozilla.org/sops/v3/decrypt"
-	"gopkg.in/yaml.v2"
 )
 
 func RunPlan(source, name string) error {
@@ -30,7 +29,7 @@ func RunPlan(source, name string) error {
 	return nil
 }
 
-func getLocalSpec(source, planFile, inputsFile string, force bool) (map[string]interface{}, error) {
+func getLocalSpec(source, planFile string, force bool) (map[string]interface{}, error) {
 	var err error
 	var planJson []byte
 	planData := map[string]interface{}{}
@@ -49,30 +48,12 @@ func getLocalSpec(source, planFile, inputsFile string, force bool) (map[string]i
 	if err := json.Unmarshal(planJson, &planData); err != nil {
 		return nil, fmt.Errorf("failed parsing plan file: %s", err)
 	}
-	inputs := map[string]interface{}{}
-	inputsYAMLEncrypted, err := os.ReadFile(inputsFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed opening inputs file: %s", err)
-	}
-	inputsYAML, err := decrypt.Data(inputsYAMLEncrypted, "yaml")
-	if err != nil {
-		return nil, fmt.Errorf("failed decryptiong inputs file: %s", err)
-	}
-	if err := yaml.Unmarshal(inputsYAML, &inputs); err != nil {
-		return nil, fmt.Errorf("failed parsing inputs file: %s", err)
-	}
-	if _, ok := planData["inputs"]; ok {
-		for k, v := range inputs {
-			planData["inputs"].(map[string]interface{})[k] = v
-		}
-	}
 	return planData, nil
 }
 
-func getHostedSpec(planName, contextName, server string) (map[string]interface{}, string, error) {
+func getHostedSpec(planName, server string) (map[string]interface{}, string, error) {
 	var client struct {
-		GetActionPlan   func(string, string) (map[string]interface{}, error)
-		GetStackContext func(string, string, string) (map[string]interface{}, error)
+		GetActionPlan func(string, string) (map[string]interface{}, error)
 	}
 	closer, err := jsonrpc.NewClient(context.Background(), fmt.Sprintf("%s/rpc", server), "v1", &client, nil)
 	if err != nil {
@@ -120,35 +101,17 @@ func getHostedSpec(planName, contextName, server string) (map[string]interface{}
 			planData["actions"] = append(planData["actions"].([]map[string]interface{}), action.(map[string]interface{}))
 		}
 	}
-	stackContext, err := client.GetStackContext(contextName, os.Getenv("SOPS_AGE_KEY"), string(token))
-	if err != nil {
-		return nil, "", err
-	}
-	for k, v := range stackContext {
-		if k != "_overrides" {
-			stackContext[k] = v
-		}
-	}
-	if overrides, ok := stackContext["_overrides"]; ok {
-		if actionPlanOverrides, ok := overrides.(map[string]interface{})[planName]; ok {
-			for k, v := range actionPlanOverrides.(map[string]interface{}) {
-				stackContext[k] = v
-			}
-		}
-	}
-	delete(stackContext, "_overrides")
-	planData["inputs"] = stackContext
 	return planData, sourceSubpath, nil
 }
 
-func RunCmd(source, planName, planFile, inputsFile, contextName, server string, stages []string, force bool) error {
+func RunCmd(source, planName, planFile, server string, stages []string, force bool) error {
 	var err error
 	var planData map[string]interface{}
 	if planFile != "" {
-		planData, err = getLocalSpec(source, planFile, inputsFile, force)
+		planData, err = getLocalSpec(source, planFile, force)
 	} else {
 		var sourceSubpath string
-		planData, sourceSubpath, err = getHostedSpec(planName, contextName, server)
+		planData, sourceSubpath, err = getHostedSpec(planName, server)
 		if err != nil {
 			return err
 		}
@@ -183,16 +146,14 @@ func StackInitializeCmd(planFile, output string) error {
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		return fmt.Errorf("error: %s already exists", output)
 	}
-	if _, ok := plan["fields"]; ok {
-		inputs := map[string]interface{}{}
-		for _, field := range plan["fields"].([]interface{}) {
-			inputs[field.(string)] = nil
+	if _, ok := plan["inputs"]; ok {
+		data := bytes.NewBufferString("")
+		for _, field := range plan["inputs"].([]interface{}) {
+			if _, err := data.WriteString(fmt.Sprintf("export %s=\n", field.(string))); err != nil {
+				return err
+			}
 		}
-		data, err := yaml.Marshal(inputs)
-		if err != nil {
-			return err
-		}
-		if err := os.WriteFile(output, data, 0644); err != nil {
+		if err := os.WriteFile(output, data.Bytes(), 0644); err != nil {
 			return err
 		}
 	}
@@ -240,7 +201,7 @@ func ExplainCmd(path, docsURL string) error {
 	if len(actionPlan.Actions) > 0 {
 		fmt.Printf("\nActions\n-------\n\n")
 		for _, action := range actionPlan.Actions {
-			spec := engine.GetActionSpec(action.Name)
+			spec := engine.GetActionSpec(action)
 			if spec != nil {
 				fmt.Printf(
 					"▸ %s - %s\n\n",
@@ -249,9 +210,9 @@ func ExplainCmd(path, docsURL string) error {
 				)
 			}
 		}
-		if len(actionPlan.Fields) > 0 {
+		if len(actionPlan.Inputs) > 0 {
 			fmt.Printf("\nInputs\n------\n\n")
-			for _, input := range actionPlan.Fields {
+			for _, input := range actionPlan.Inputs {
 				spec := plan.GetInputSpec(input)
 				if spec == nil {
 					continue

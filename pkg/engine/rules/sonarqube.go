@@ -25,6 +25,6 @@ var sonarProjectPropertiesExistsRule engine.Rule = func(source string, collector
 
 func init() {
 	engine.AddToRuleset(&expressDependencyExistsRule, &sonarProjectPropertiesExistsRule)
-	engine.AddToRuleset(&reactScriptsBuildExsitsRule, &sonarProjectPropertiesExistsRule)
+	engine.AddToRuleset(&npmBuildExsitsRule, &sonarProjectPropertiesExistsRule)
 
 }

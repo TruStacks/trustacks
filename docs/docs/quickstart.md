@@ -9,7 +9,7 @@ Download the cli [here](https://github.com/TruStacks/trustacks/releases)
 
 ### Plan
 
-Run the following command to build an action plan
+Run the following command to build an action plan from your project source.
 
 ```bash
 tsctl plan --name <plan_name> --source <path_to_source>
@@ -29,29 +29,12 @@ Run the following command to generate stack inputs from the plan. The inputs con
 tsctl stack init --from-plan <plan_name>.plan
 ```
 
-This will generate an input file in the working directory named `inputs.yaml` with the keys and null values for the required inputs.
+This will generate an input file in the working directory named `inputs.env` with unix exports and empty variables.
 
 :::caution
-DO NOT MODIFY INPUT KEYS
+Do not modify the varaible names
 :::
 
-##### Encryption
-
-TruStacks uses [sops](https://github.com/getsops/sops/releases) and [age](https://github.com/FiloSottile/age/releases) for input encryption.
-
-Run the following commands to encrypt your inputs
-
-1. Generate an age key
-
-```bash
-age-keygen -o key.txt
-```
-
-2. Encrypt your stack inputs file using the public key from the *key.txt* file
-
-```bash
-sops -e -i --age <age_public_key> inputs.yaml
-```
 
 ## Run
 
@@ -60,7 +43,7 @@ Action plans require [docker](https://docs.docker.com/get-docker/).
 Run the following in a docker environment (local or CI/CD) from the root of your source.
 
 ```bash
-SOPS_AGE_KEY=<age_secret_key> tsctl run <plan_file> --source <path_to_source> --inputs <path_to_encrypted_inputs> --stages feedback
+tsctl run <plan_file> --source <path_to_source> --inputs <path_to_encrypted_inputs> --stages feedback
 ```
 
 :::tip

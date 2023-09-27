@@ -23,13 +23,13 @@ func (engine *Engine) CreateActionPlan(source string, simple bool) (string, erro
 				pass = false
 			}
 		}
-		if pass {
-			spec := resolver.spec
-			if simple {
-				spec.Description = ""
-				spec.DisplayName = ""
+		for _, fact := range resolver.excludeIf {
+			if facts.Contains(fact) {
+				pass = false
 			}
-			actionPlan.AddAction(spec, resolver.userInputs)
+		}
+		if pass {
+			actionPlan.AddAction(resolver.spec.Name, resolver.inputs)
 		}
 	}
 	actionPlanJson, err := actionPlan.ToJson()
@@ -61,13 +61,14 @@ func NewFact() Fact {
 var admissionResolvers = []AdmissionResolver{}
 
 type AdmissionResolver struct {
-	spec       plan.ActionSpec
-	criteria   []Fact
-	userInputs []string
+	spec      plan.ActionSpec
+	criteria  []Fact
+	excludeIf []Fact
+	inputs    []string
 }
 
-func RegisterAdmissionResolver(spec plan.ActionSpec, criteria []Fact, userInputs []string) {
-	admissionResolvers = append(admissionResolvers, AdmissionResolver{spec, criteria, userInputs})
+func RegisterAdmissionResolver(spec plan.ActionSpec, criteria []Fact, excludeIf []Fact, userInputs []string) {
+	admissionResolvers = append(admissionResolvers, AdmissionResolver{spec, criteria, excludeIf, userInputs})
 }
 
 func GetActionSpec(name string) *plan.ActionSpec {

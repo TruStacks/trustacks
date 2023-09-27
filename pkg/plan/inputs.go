@@ -7,7 +7,7 @@ type input interface {
 	Link() string
 }
 
-const ContainerRegistry InputField = "ContainerRegistry"
+const ContainerRegistry InputField = "CONTAINER_REGISTRY"
 
 type ContainerRegistrySpec struct{}
 
@@ -22,7 +22,7 @@ func (input ContainerRegistrySpec) Link() string {
 	return "container"
 }
 
-const ContainerRegistryUsername InputField = "ContainerRegistryUsername"
+const ContainerRegistryUsername InputField = "CONTAINER_REGISTRY_USERNAME"
 
 type ContainerRegistryUsernameSpec struct{}
 
@@ -36,7 +36,7 @@ func (input ContainerRegistryUsernameSpec) Link() string {
 	return "container"
 }
 
-const ContainerRegistryPassword InputField = "ContainerRegistryPassword"
+const ContainerRegistryPassword InputField = "CONTAINER_REGISTRY_PASSWORD"
 
 type ContainerRegistryPasswordSpec struct{}
 
@@ -50,7 +50,7 @@ func (input ContainerRegistryPasswordSpec) Link() string {
 	return "container"
 }
 
-const KubernetesStagingKubeconfig InputField = "KubernetesStagingKubeconfig"
+const KubernetesStagingKubeconfig InputField = "KUBERNETES_STAGING_KUBECONFIG"
 
 type KubernetesStagingKubeconfigSpec struct{}
 
@@ -66,7 +66,7 @@ func (input KubernetesStagingKubeconfigSpec) Link() string {
 	return "container"
 }
 
-const KubernetesNamespace InputField = "KubernetesNamespace"
+const KubernetesNamespace InputField = "KUBERNETES_NAMESPACE"
 
 type KubernetesNamespaceSpec struct{}
 
@@ -80,7 +80,7 @@ func (input KubernetesNamespaceSpec) Link() string {
 	return "container"
 }
 
-const SonarqubeToken InputField = "SonarqubeToken"
+const SonarqubeToken InputField = "SONARQUBE_TOKEN"
 
 type SonarqubeTokenSpec struct{}
 
@@ -94,15 +94,15 @@ func (input SonarqubeTokenSpec) Link() string {
 	return "container"
 }
 
-var inputSpecs = map[string]input{
-	"ContainerRegistry":           ContainerRegistrySpec{},
-	"ContainerRegistryUsername":   ContainerRegistryUsernameSpec{},
-	"ContainerRegistryPassword":   ContainerRegistryPasswordSpec{},
-	"KubernetesStagingKubeconfig": KubernetesStagingKubeconfigSpec{},
-	"KubernetesNamespace":         KubernetesNamespaceSpec{},
-	"SonarqubeToken":              SonarqubeTokenSpec{},
+var vars = map[string]input{
+	"CONTAINER_REGISTRY":            ContainerRegistrySpec{},
+	"CONTAINER_REGISTRY_USERNAME":   ContainerRegistryUsernameSpec{},
+	"CONTAINER_REGISTRY_PASSWORD":   ContainerRegistryPasswordSpec{},
+	"KUBERNETES_STAGING_KUBECONFIG": KubernetesStagingKubeconfigSpec{},
+	"KUBERNETES_NAMESPACE":          KubernetesNamespaceSpec{},
+	"SONARQUBE_TOKEN":               SonarqubeTokenSpec{},
 }
 
 func GetInputSpec(name string) input {
-	return inputSpecs[name]
+	return vars[name]
 }

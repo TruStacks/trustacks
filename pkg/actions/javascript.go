@@ -11,7 +11,7 @@ import (
 
 var packageJsonVersion = &plan.Action{
 	Name:   "packageJsonVersion",
-	Image:  "node:alpine",
+	Image:  func(_ *plan.Config) string { return "node:alpine" },
 	Stage:  plan.OnDemandStage,
 	Caches: []string{"/src/node_modules"},
 	OutputArtifacts: []plan.Artifact{
@@ -32,6 +32,7 @@ func init() {
 			Description: "Use the package.json version as the semantic release version for versioned application artifacts.",
 		},
 		[]engine.Fact{rules.PackageJsonVersionExistsFact},
+		nil,
 		nil,
 	)
 	plan.RegisterAction(packageJsonVersion)

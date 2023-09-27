@@ -10,9 +10,9 @@ import (
 	"github.com/trustacks/trustacks/pkg/plan"
 )
 
-var reactScriptsTestAction = &plan.Action{
-	Name:   "reactScriptsTest",
-	Image:  "node:alpine",
+var npmTestAction = &plan.Action{
+	Name:   "npmTest",
+	Image:  func(_ *plan.Config) string { return "node:alpine" },
 	Stage:  plan.FeedbackStage,
 	Caches: []string{"/src/node_modules"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
@@ -25,9 +25,9 @@ var reactScriptsTestAction = &plan.Action{
 	},
 }
 
-var reactScriptsBuildAction = &plan.Action{
-	Name:   "reactScriptsBuild",
-	Image:  "node:alpine",
+var npmBuildAction = &plan.Action{
+	Name:   "npmBuild",
+	Image:  func(_ *plan.Config) string { return "node:alpine" },
 	Stage:  plan.OnDemandStage,
 	Caches: []string{"/src/node_modules"},
 	OutputArtifacts: []plan.Artifact{
@@ -43,30 +43,32 @@ var reactScriptsBuildAction = &plan.Action{
 
 func init() {
 	engine.RegisterPatternMatches([]engine.PatternMatch{
-		{Kind: engine.FilePatternMatch, Pattern: `\.test.js`},
-		{Kind: engine.FilePatternMatch, Pattern: `\.test.jsx`},
-		{Kind: engine.FilePatternMatch, Pattern: `\.test.ts`},
-		{Kind: engine.FilePatternMatch, Pattern: `\.test.tsx`},
+		{Kind: engine.FilePatternMatch, Pattern: ".*.test.js"},
+		{Kind: engine.FilePatternMatch, Pattern: ".*.test.jsx"},
+		{Kind: engine.FilePatternMatch, Pattern: ".*.test.ts"},
+		{Kind: engine.FilePatternMatch, Pattern: ".*.test.tsx"},
 	})
 	engine.RegisterAdmissionResolver(
 		plan.ActionSpec{
-			Name:        reactScriptsTestAction.Name,
-			DisplayName: "React Scripts Test",
-			Description: "Run the test suite with react-scripts test.",
+			Name:        npmTestAction.Name,
+			DisplayName: "Npm Test",
+			Description: "Run the test suite with npm test.",
 		},
-		[]engine.Fact{rules.ReactScriptsTestExistsFact},
+		[]engine.Fact{rules.NpmTestExistsFact},
+		nil,
 		nil,
 	)
-	plan.RegisterAction(reactScriptsTestAction)
+	plan.RegisterAction(npmTestAction)
 
 	engine.RegisterAdmissionResolver(
 		plan.ActionSpec{
-			Name:        reactScriptsBuildAction.Name,
-			DisplayName: "React Scripts Build",
-			Description: "Build production react assets with react-scripts build.",
+			Name:        npmBuildAction.Name,
+			DisplayName: "Npm Build",
+			Description: "Build the application with npm run build.",
 		},
-		[]engine.Fact{rules.ReactScriptsBuildExistsFact},
+		[]engine.Fact{rules.NpmBuildExistsFact},
+		nil,
 		nil,
 	)
-	plan.RegisterAction(reactScriptsBuildAction)
+	plan.RegisterAction(npmBuildAction)
 }

@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"dagger.io/dagger"
+	"github.com/trustacks/trustacks/pkg/engine"
+	"github.com/trustacks/trustacks/pkg/engine/rules"
 	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 var golangTest = &plan.Action{
 	Name:   "golangTest",
-	Image:  "golang",
+	Image:  func(_ *plan.Config) string { return "golang" },
 	Stage:  plan.FeedbackStage,
 	Caches: []string{"/go/pkg/mod"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
@@ -19,22 +21,23 @@ var golangTest = &plan.Action{
 	},
 }
 
-// func init() {
-// 	engine.RegisterPatternMatches([]engine.PatternMatch{
-// 		{
-// 			Kind:       engine.FilePatternMatch,
-// 			Pattern:    "_test.go",
-// 			Exclusions: &[]string{"testdata", "vendor"},
-// 		},
-// 	})
-// 	engine.RegisterAdmissionResolver(
-// 		plan.ActionSpec{
-// 			Name:        golangTest.Name,
-// 			DisplayName: "Golang Test",
-// 			Description: "Run the test suite with go test.",
-// 		},
-// 		[]engine.Fact{},
-// 		nil,
-// 	)
-// 	plan.RegisterAction(golangTest)
-// }
+func init() {
+	engine.RegisterPatternMatches([]engine.PatternMatch{
+		{
+			Kind:       engine.FilePatternMatch,
+			Pattern:    "_test.go",
+			Exclusions: &[]string{"testdata", "vendor"},
+		},
+	})
+	engine.RegisterAdmissionResolver(
+		plan.ActionSpec{
+			Name:        golangTest.Name,
+			DisplayName: "Golang Test",
+			Description: "Run the test suite with go test.",
+		},
+		[]engine.Fact{rules.GolangCILintConfigExistsFact},
+		nil,
+		nil,
+	)
+	plan.RegisterAction(golangTest)
+}

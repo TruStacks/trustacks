@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"dagger.io/dagger"
@@ -18,16 +19,16 @@ type ActionSpec struct {
 }
 
 type ActionPlan struct {
-	Actions   []ActionSpec           `json:"actions"`
-	Fields    []string               `json:"fields"`
-	Inputs    map[string]interface{} `json:"inputs,omitempty"`
+	Actions   []string `json:"actions"`
+	Inputs    []string `json:"inputs,omitempty"`
+	vars      map[string]interface{}
 	id        string
 	artifacts *ArtifactStore
 }
 
 type Action struct {
 	Name                   string
-	Image                  string
+	Image                  func(*Config) string
 	Script                 func(*dagger.Container, map[string]interface{}, *ActionUtilities) error
 	Stage                  Stage
 	InputArtifacts         []Artifact
@@ -192,9 +193,9 @@ func (s *scheduler) schedule(actions []string) (map[Stage][]*Action, error) {
 	return s.sortActions(assignments), nil
 }
 
-func (ap *ActionPlan) AddAction(spec ActionSpec, fields []string) {
-	ap.Actions = append(ap.Actions, spec)
-	ap.Fields = append(ap.Fields, fields...)
+func (ap *ActionPlan) AddAction(name string, inputs []string) {
+	ap.Actions = append(ap.Actions, name)
+	ap.Inputs = append(ap.Inputs, inputs...)
 }
 
 func (ap *ActionPlan) ToJson() (string, error) {
@@ -205,20 +206,20 @@ func (ap *ActionPlan) ToJson() (string, error) {
 	return string(data), nil
 }
 
-func (ap *ActionPlan) runAction(source string, action *Action, client *dagger.Client) error {
+func (ap *ActionPlan) runAction(source string, action *Action, client *dagger.Client, config *Config) error {
 	log.Info("Queuing action", "action", action.Name)
-	container := client.Container().From(action.Image)
+	container := client.Container().From(action.Image(config))
 	container = container.WithMountedDirectory("/src", client.Host().Directory(source)).WithWorkdir("/src")
 	for _, path := range action.Caches {
 		container = container.WithMountedCache(path, client.CacheVolume(ap.id+path))
 	}
-	return action.Script(container, ap.Inputs, newActionUtilities(client, ap.artifacts))
+	return action.Script(container, ap.vars, newActionUtilities(client, ap.artifacts, config))
 }
 
 func NewActionPlan(client *dagger.Client) *ActionPlan {
 	plan := &ActionPlan{
-		Inputs: make(map[string]interface{}),
-		id:     time.Now().Format(time.RFC3339),
+		vars: make(map[string]interface{}),
+		id:   time.Now().Format(time.RFC3339),
 	}
 	if client != nil {
 		plan.artifacts = newArtifactStore(client)
@@ -236,15 +237,20 @@ func Run(source, spec string, client *dagger.Client, stages []string) error {
 	if err := json.Unmarshal([]byte(spec), &ap); err != nil {
 		return err
 	}
+	undefinedVariables := false
 	for _, input := range ap.Inputs {
-		if input == nil {
-			return errors.New("action plan cannot contain null user-defined inputs")
+		value := os.Getenv(input)
+		if value == "" {
+			undefinedVariables = true
+			fmt.Printf("%s is not defined\n", input)
+		} else {
+			ap.vars[input] = value
 		}
 	}
-	actions := []string{}
-	for _, a := range ap.Actions {
-		actions = append(actions, a.Name)
+	if undefinedVariables {
+		return errors.New("error: terminating due to undefined inputs")
 	}
+	actions := ap.Actions
 	schedule, err := newScheduler().schedule(actions)
 	if err != nil {
 		return err
@@ -259,13 +265,17 @@ func Run(source, spec string, client *dagger.Client, stages []string) error {
 			}
 		}
 	}
+	config, err := NewConfig()
+	if err != nil {
+		return err
+	}
 	for stageId, key := range actionStages {
 		for _, name := range stages {
 			if key == name {
 				stage := Stage(stageId)
 				if actions, ok := schedule[stage]; ok {
 					for _, action := range actions {
-						if err := ap.runAction(source, action, client); err != nil {
+						if err := ap.runAction(source, action, client, config); err != nil {
 							return err
 						}
 					}

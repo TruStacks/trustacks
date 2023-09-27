@@ -11,7 +11,7 @@ import (
 
 var trivyImageAction = &plan.Action{
 	Name:   "trivyImageAction",
-	Image:  "aquasec/trivy",
+	Image:  func(_ *plan.Config) string { return "aquasec/trivy" },
 	Stage:  plan.FeedbackStage,
 	Caches: []string{"/src/node_modules"},
 	InputArtifacts: []plan.Artifact{
@@ -36,6 +36,7 @@ func init() {
 			Description: "Scan the container image with the trivy security scanner.",
 		},
 		[]engine.Fact{rules.TrivyConfigExistsFact},
+		nil,
 		nil,
 	)
 	plan.RegisterAction(trivyImageAction)
