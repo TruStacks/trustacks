@@ -7,8 +7,6 @@ slug: /actions/containerize/build
 
 The build action builds an [OCI compliant](https://opencontainers.org/) image from the application Dockerfile or Containerfile.
 
-### Stack Inputs
-
 - [ContainerRegistry](/inputs#container)
 - [ContainerRegistryUsername](/inputs#container)
 - [ContainerRegistryPassword](/inputs#container)
