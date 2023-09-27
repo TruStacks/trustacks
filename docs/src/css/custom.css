@@ -34,18 +34,19 @@
   --ifm-color-primary-light: #968DC9;
   --ifm-color-primary-lighter: #A89FDD;
   --ifm-color-primary-lightest: #C0B8F4;
-  --ifm-background-color: #222 !important;
+  --ifm-background-color: #111 !important;
   --ifm-font-color-base: #eee;
   --ifm-breadcrumb-color-active: var(--ifm-color-primary-light);
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
 .navbar {
-  background-color: #222 !important;
+  background-color: #111 !important;
+  box-shadow: 0 3px 7px #0a0a0a;
 }
 
 [data-theme='dark'] .navbar {
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid #222;
 }
 
 .header-github-link:hover {
@@ -66,8 +67,16 @@
     no-repeat;
 }
 
+.footer {
+  background: #151515;
+}
+
 .menu {
   font-weight: 600;
+}
+
+.theme-doc-sidebar-container {
+  border-right-color: #222 !important;
 }
 
 .TrustacksWelcome {

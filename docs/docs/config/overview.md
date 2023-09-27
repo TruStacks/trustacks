@@ -10,6 +10,6 @@ Configuration enables declarative values to be provided in place of discovered s
 
 To use declarative configuration a file named `trustacks.toml` must be placed on the root of the project source.
 
-:::caution Deprecation by 2030
-Declarative configuration will be deprecated by 2030 in favor of native source discovery. 
+:::info Deprecation by 2030
+TruStacks plans for declarative configuration to be deprecated by 2030 in favor of native source discovery.
 :::
