@@ -220,7 +220,7 @@ func ExplainCmd(path, docsURL string) error {
 				fmt.Printf(
 					"▸ %s - %s\n%s\n",
 					lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(input),
-					fmt.Sprintf("%s/inputs/%s", docsURL, spec.Link()),
+					fmt.Sprintf("%s/inputs#%s", docsURL, spec.Link()),
 					spec.Description(),
 				)
 			}
