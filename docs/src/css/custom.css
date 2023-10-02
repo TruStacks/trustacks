@@ -42,11 +42,12 @@
 
 .navbar {
   background-color: #111 !important;
-  box-shadow: 0 3px 7px #0a0a0a;
+  box-shadow: 0 3px 7px #aaa;
 }
 
 [data-theme='dark'] .navbar {
   border-bottom: 1px solid #222;
+  box-shadow: 0 3px 7px #0a0a0a;
 }
 
 .header-github-link:hover {
@@ -67,7 +68,7 @@
     no-repeat;
 }
 
-.footer {
+[data-theme='dark'] .footer {
   background: #151515;
 }
 
@@ -75,7 +76,7 @@
   font-weight: 600;
 }
 
-.theme-doc-sidebar-container {
+[data-theme='dark'] .theme-doc-sidebar-container {
   border-right-color: #222 !important;
 }
 
