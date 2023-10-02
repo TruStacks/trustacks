@@ -70,40 +70,6 @@ SOPS_AGE_KEY=<age_secret_key> tsctl run <plan_file> --source <path_to_source> --
 
 <small>**Remove the `--stages` option to run the complete plan*.</small>
 
-## Project Catalyst
-
-[Catalyst](https://github.com/orgs/TruStacks/projects/2) is the current project the ecompasses the core engine features of TruStacks. The status of current and planned features is below.
-
-#### Frameworks
-
-|Framework|Implemented|
-|-|-|
-|React|✅|
-|Angular|❌|
-|Vue|❌|
-|Gin|❌|
-|FastAPI|❌|
-|.Net|❌|
-|Flutter|❌|
-
-#### Actions
-
-|Actions|Implemented|
-|-|-|
-|React Build|✅|
-|React Test|✅|
-|GolangCI Lint|❌|
-|Go Test|❌|
-|Container Build|✅|
-|Container Deploy|✅|
-|ESLint|✅|
-|Helm Release (Stage)|✅|
-|Helm Release (Release)|❌|
-|SonarQube Scan|✅|
-|Trivy Container Scan|✅|
-|Cypress|❌|
-|ArgoCD Sync|❌|
-
 ### Contributing
 
 If you are interested in contributing to TruStacks please join our [Community](https://discord.gg/usgjQj7QTd) to get involved. 
