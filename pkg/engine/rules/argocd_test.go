@@ -10,14 +10,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type helmTestCollector struct {
+type argocdTestCollector struct {
 	results []string
 }
 
-func (c helmTestCollector) Search(pattern string) []string {
+func (c argocdTestCollector) Search(pattern string) []string {
 	return c.results
 }
-func TestHasHelmChartRule(t *testing.T) {
+func TestArgoCDApplicationExistsRule(t *testing.T) {
 	t.Run("ArgoCDApplicationExistsFact is true", func(t *testing.T) {
 		d, err := os.MkdirTemp("", "test-src")
 		if err != nil {
@@ -34,7 +34,7 @@ func TestHasHelmChartRule(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(d, "argo-app.yaml"), []byte(yml), 0744); err != nil {
 			t.Fatal(err)
 		}
-		collector := &helmTestCollector{results: []string{filepath.Join(d, "argo-app.yaml")}}
+		collector := &argocdTestCollector{results: []string{filepath.Join(d, "argo-app.yaml")}}
 		fact, err := argoCDApplicationExistsRule(d, collector, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -47,7 +47,7 @@ func TestHasHelmChartRule(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		fact, err := argoCDApplicationExistsRule(d, &helmTestCollector{results: []string{}}, nil)
+		fact, err := argoCDApplicationExistsRule(d, &argocdTestCollector{results: []string{}}, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -62,7 +62,7 @@ func TestHasHelmChartRule(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(d, "helm", "Chart.yaml"), []byte(yml), 0744); err != nil {
 			t.Fatal(err)
 		}
-		collector := &helmTestCollector{results: []string{filepath.Join(d, "helm", "Chart.yaml")}}
+		collector := &argocdTestCollector{results: []string{filepath.Join(d, "helm", "Chart.yaml")}}
 		fact, err = argoCDApplicationExistsRule(d, collector, nil)
 		if err != nil {
 			t.Fatal(err)
