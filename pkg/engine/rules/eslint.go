@@ -56,6 +56,5 @@ eslintSourcePatternMatch:
 }
 
 func init() {
-	engine.AddToRuleset(&expressDependencyExistsRule, &eslintConfigExistsRule)
-	engine.AddToRuleset(&npmBuildExsitsRule, &eslintConfigExistsRule)
+	engine.AddToRuleset(&packageJsonExistsRule, &eslintConfigExistsRule)
 }

@@ -1,11 +1,12 @@
 ---
+slug: /tutorial
 title: Overview
 sidebar_position: 1
 ---
 
-# Get Started
+# Tutorial
 
-This guide will get your started using TruStacks.
+This tutorial will you through deploying an application with TruStacks.
 
 ## Goals
 

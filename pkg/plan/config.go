@@ -21,9 +21,15 @@ type ConfigPython struct {
 	DevRequirements string   `toml:"dev_reqs"`
 }
 
+type ConfigArgoCD struct {
+	GRPCWeb  bool `toml:"grpcWeb"`
+	Insecure bool `toml:"insecure"`
+}
+
 type Config struct {
 	Common ConfigCommon `toml:"common"`
 	Python ConfigPython `toml:"python"`
+	ArgoCD ConfigArgoCD `toml:"argocd"`
 }
 
 func NewConfig() (*Config, error) {

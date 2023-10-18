@@ -15,7 +15,6 @@ var actionStages = []string{
 	"", // DO NOT DELETE!
 	"feedback",
 	"package",
-	"stage",
-	"qa",
+	"prerelease",
 	"release",
 }

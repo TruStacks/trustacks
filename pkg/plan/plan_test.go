@@ -77,19 +77,36 @@ func TestSchedulerAssigneOnDemandActions(t *testing.T) {
 }
 
 func TestSchedulerSortActions(t *testing.T) {
-	var mockArtifactA Artifact = 1
-	var mockArtifactB Artifact = 2
-	actionA := &Action{Name: "actionA", Stage: FeedbackStage, OutputArtifacts: []Artifact{mockArtifactA}}
-	actionB := &Action{Name: "actionB", Stage: FeedbackStage, OutputArtifacts: []Artifact{mockArtifactB}, InputArtifacts: []Artifact{mockArtifactA}}
-	actionC := &Action{Name: "actionC", Stage: FeedbackStage, InputArtifacts: []Artifact{mockArtifactB}}
-	assignments := map[Stage]mapset.Set[*Action]{
-		FeedbackStage: mapset.NewSet[*Action](actionB, actionC, actionA),
-	}
-	s := newScheduler()
-	sortedAssignments := s.sortActions(assignments)
-	assert.Equal(t, sortedAssignments[FeedbackStage][0], actionA)
-	assert.Equal(t, sortedAssignments[FeedbackStage][1], actionB)
-	assert.Equal(t, sortedAssignments[FeedbackStage][2], actionC)
+	t.Run("resolvableInputs", func(t *testing.T) {
+		var mockArtifactA Artifact = 1
+		var mockArtifactB Artifact = 2
+		actionA := &Action{Name: "actionA", Stage: FeedbackStage, OutputArtifacts: []Artifact{mockArtifactA}}
+		actionB := &Action{Name: "actionB", Stage: FeedbackStage, OutputArtifacts: []Artifact{mockArtifactB}, InputArtifacts: []Artifact{mockArtifactA}}
+		actionC := &Action{Name: "actionC", Stage: FeedbackStage, InputArtifacts: []Artifact{mockArtifactB}}
+		assignments := map[Stage]mapset.Set[*Action]{
+			FeedbackStage: mapset.NewSet[*Action](actionB, actionC, actionA),
+		}
+		s := newScheduler()
+		sortedAssignments, err := s.sortActions(assignments)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, sortedAssignments[FeedbackStage][0], actionA)
+		assert.Equal(t, sortedAssignments[FeedbackStage][1], actionB)
+		assert.Equal(t, sortedAssignments[FeedbackStage][2], actionC)
+	})
+	t.Run("unresolvableInputs", func(t *testing.T) {
+		var mockArtifactA Artifact = 1
+		var mockArtifactB Artifact = 2
+		actionA := &Action{Name: "actionA", Stage: FeedbackStage, OutputArtifacts: []Artifact{mockArtifactA}}
+		actionB := &Action{Name: "actionB", Stage: FeedbackStage, InputArtifacts: []Artifact{mockArtifactB}}
+		assignments := map[Stage]mapset.Set[*Action]{
+			FeedbackStage: mapset.NewSet[*Action](actionB, actionA),
+		}
+		s := newScheduler()
+		_, err := s.sortActions(assignments)
+		assert.ErrorContains(t, err, "the scheduler has detected unresolved inputs for the following actions: 'actionB'")
+	})
 }
 
 func TestSchedulerSchedule(t *testing.T) {

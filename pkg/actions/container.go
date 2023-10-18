@@ -31,8 +31,6 @@ var containerCopyAction = &plan.Action{
 	Stage: plan.PackageStage,
 	InputArtifacts: []plan.Artifact{
 		plan.ContainerImageArtifact,
-	},
-	OptionalInputArtifacts: []plan.Artifact{
 		plan.SemanticVersionArtifact,
 	},
 	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *plan.ActionUtilities) error {

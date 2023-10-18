@@ -10,7 +10,7 @@ import (
 )
 
 var trivyImageAction = &plan.Action{
-	Name:   "trivyImageAction",
+	Name:   "trivyImage",
 	Image:  func(_ *plan.Config) string { return "aquasec/trivy" },
 	Stage:  plan.FeedbackStage,
 	Caches: []string{"/src/node_modules"},

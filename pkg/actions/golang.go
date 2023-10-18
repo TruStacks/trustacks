@@ -35,7 +35,7 @@ func init() {
 			DisplayName: "Golang Test",
 			Description: "Run the test suite with go test.",
 		},
-		[]engine.Fact{rules.GolangCILintConfigExistsFact},
+		[]engine.Fact{rules.GolangTestsExistFact},
 		nil,
 		nil,
 	)

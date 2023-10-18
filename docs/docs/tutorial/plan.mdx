@@ -1,0 +1,38 @@
+---
+title: Plan
+sidebar_position: 3
+slug: /get-started/plan
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Plan
+
+### What is an action plan?
+
+An action plan is a set of actions that are selected based on the contents of an applications's source code.
+
+## Your First Action Plan
+
+To get started, [fork](https://github.com/TruStacks/react-sample/fork) and clone the sample application repo.
+
+:::tip
+You may use your own project for this tutorial. View the list of supported actions [here](/actions).
+:::
+
+### Generate the action plan
+
+Navigate to the repo source and run the following command from the root of the source:
+
+```
+tsctl plan
+```
+
+This command generates an action plan in the current directory called `trustacks.plan`.
+
+Run `tsctl explain trustacks.plan` to view the actions that were discovered from the source.
+
+:::info
+If you get the error `No actions could be generated from the provided source`, then the engine was unable to match any actions from the source.
+:::

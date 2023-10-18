@@ -2,9 +2,9 @@ package plan
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"dagger.io/dagger"
@@ -139,7 +139,7 @@ func (s *scheduler) assignOnDemandActions(assignments map[Stage]mapset.Set[*Acti
 			}
 			if !matched {
 				err := fmt.Errorf("one or more outputs from on-demand action '%s' could not be matched to an action in a fixed activity state. this action will be excluded from the action plan", action.Name)
-				log.Warn("", "err", err)
+				log.Info("", "err", err)
 				assignments[OnDemandStage].Remove(action)
 			}
 		}
@@ -147,41 +147,46 @@ func (s *scheduler) assignOnDemandActions(assignments map[Stage]mapset.Set[*Acti
 	return nil
 }
 
-func (s *scheduler) sortActions(assignments map[Stage]mapset.Set[*Action]) map[Stage][]*Action {
+func (s *scheduler) sortActions(assignments map[Stage]mapset.Set[*Action]) (map[Stage][]*Action, error) {
 	sortedAssignments := map[Stage][]*Action{}
-	assignedOutputs := []Artifact{}
+	assignedActionOutputs := []Artifact{}
 	for stageIndex := range actionStages {
 		stage := Stage(stageIndex)
 		if actions, ok := assignments[stage]; ok {
+			actionsWithUnresolvedInputs := mapset.NewSet[string]()
 			for {
-				if actions.Cardinality() == 0 {
-					break
-				}
+				startingCardinality := actions.Cardinality()
 			ActionLoop:
 				for _, action := range actions.ToSlice() {
 					if len(action.InputArtifacts) == 0 {
 						sortedAssignments[stage] = append(sortedAssignments[stage], action)
 					} else {
 						for _, input := range action.InputArtifacts {
-							var assignedOutputMatchesInput bool
-							for _, output := range assignedOutputs {
+							var inputIsFulfilled bool
+							for _, output := range assignedActionOutputs {
 								if input == output {
-									assignedOutputMatchesInput = true
+									inputIsFulfilled = true
 								}
 							}
-							if !assignedOutputMatchesInput {
+							if !inputIsFulfilled {
+								actionsWithUnresolvedInputs.Add(action.Name)
 								continue ActionLoop
 							}
 						}
 						sortedAssignments[stage] = append(sortedAssignments[stage], action)
 					}
-					assignedOutputs = append(assignedOutputs, action.OutputArtifacts...)
+					assignedActionOutputs = append(assignedActionOutputs, action.OutputArtifacts...)
 					actions.Remove(action)
+				}
+				if actions.Cardinality() == 0 {
+					break
+				} else if startingCardinality == actions.Cardinality() {
+					return nil, fmt.Errorf("the scheduler has detected unresolved inputs for the following actions: '%s'", strings.Join(actionsWithUnresolvedInputs.ToSlice(), ","))
 				}
 			}
 		}
 	}
-	return sortedAssignments
+	return sortedAssignments, nil
 }
 
 func (s *scheduler) schedule(actions []string) (map[Stage][]*Action, error) {
@@ -190,7 +195,11 @@ func (s *scheduler) schedule(actions []string) (map[Stage][]*Action, error) {
 	if err := s.assignOnDemandActions(assignments); err != nil {
 		return nil, err
 	}
-	return s.sortActions(assignments), nil
+	sortedAssignments, err := s.sortActions(assignments)
+	if err != nil {
+		return nil, err
+	}
+	return sortedAssignments, nil
 }
 
 func (ap *ActionPlan) AddAction(name string, inputs []string) {
@@ -237,18 +246,17 @@ func Run(source, spec string, client *dagger.Client, stages []string) error {
 	if err := json.Unmarshal([]byte(spec), &ap); err != nil {
 		return err
 	}
-	undefinedVariables := false
+	missingInputs := []string{}
 	for _, input := range ap.Inputs {
 		value := os.Getenv(input)
 		if value == "" {
-			undefinedVariables = true
-			fmt.Printf("%s is not defined\n", input)
+			missingInputs = append(missingInputs, input)
 		} else {
 			ap.vars[input] = value
 		}
 	}
-	if undefinedVariables {
-		return errors.New("error: terminating due to undefined inputs")
+	if len(missingInputs) > 0 {
+		return fmt.Errorf("missing inputs: %s", strings.Join(missingInputs, ", "))
 	}
 	actions := ap.Actions
 	schedule, err := newScheduler().schedule(actions)

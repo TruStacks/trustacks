@@ -17,7 +17,7 @@ type expressPackageJsonSpec struct {
 	Dependencies map[string]interface{} `json:"dependencies"`
 }
 
-var expressDependencyExistsRule engine.Rule = func(source string, collector engine.Collector, _ mapset.Set[engine.Fact]) (engine.Fact, error) {
+var expressDependencyExistsRule engine.Rule = func(source string, _ engine.Collector, _ mapset.Set[engine.Fact]) (engine.Fact, error) {
 	var fact = engine.NilFact
 	packageJson := &expressPackageJsonSpec{}
 	data, err := os.ReadFile(filepath.Join(source, "package.json"))
