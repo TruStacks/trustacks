@@ -12,7 +12,7 @@ TruStacks uses a rule engine to generate actions plans that contain actions base
 
 ## Docs
 
-View the docs [here](https://docs.trustacks.io)
+View the docs [here](docs.trustacks.io)
 
 ### Contributing
 
