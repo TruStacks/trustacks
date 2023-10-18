@@ -11,24 +11,23 @@ import (
 )
 
 var (
-	version                    string
-	planCmdName                string
-	planCmdSource              string
-	explainCmdDocsURL          string
-	runCmdPlan                 string
-	runCmdSource               string
-	runCmdStages               []string
-	runCmdForce                bool
-	stackInitializeCmdFromPlan string
-	stackInitializeCmdOutput   string
-	loginCmdUsername           string
-	loginCmdPassword           string
-	rootCmdServer              string
+	version            string
+	planCmdName        string
+	planCmdSource      string
+	explainCmdDocsURL  string
+	runCmdPlan         string
+	runCmdSource       string
+	runCmdStages       []string
+	runCmdForce        bool
+	configInitFromPlan string
+	loginCmdUsername   string
+	loginCmdPassword   string
+	rootCmdServer      string
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "tsctl",
-	Short: "Trustacks software delivery engine",
+	Short: "TruStacks software delivery engine",
 }
 
 var versionCmd = &cobra.Command{
@@ -70,7 +69,7 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run an action plan",
 	Run: func(cmd *cobra.Command, args []string) {
-		planFile := ""
+		planFile := "trustacks.plan"
 		if len(args) > 0 {
 			planFile = args[0]
 		}
@@ -81,16 +80,16 @@ var runCmd = &cobra.Command{
 	},
 }
 
-var stackCmd = &cobra.Command{
-	Use:   "stack",
-	Short: "manage input stacks",
+var configCmd = &cobra.Command{
+	Use:   "config",
+	Short: "manage action plan inputs",
 }
 
-var stackInitializeCmd = &cobra.Command{
+var configInitCmd = &cobra.Command{
 	Use:   "init",
-	Short: "initialize an input file from a plan",
+	Short: "create a Configu schema from an action plan",
 	Run: func(cmd *cobra.Command, _ []string) {
-		if err := internal.StackInitializeCmd(stackInitializeCmdFromPlan, stackInitializeCmdOutput); err != nil {
+		if err := internal.ConfigInitCmd(configInitFromPlan); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -113,11 +112,7 @@ func main() {
 
 	rootCmd.AddCommand(versionCmd)
 
-	planCmd.Flags().StringVar(&planCmdName, "name", "", "name of the application")
-	if err := planCmd.MarkFlagRequired("name"); err != nil {
-		fmt.Println(err)
-		return
-	}
+	planCmd.Flags().StringVar(&planCmdName, "name", "trustacks", "name of the plan")
 	planCmd.Flags().StringVar(&planCmdSource, "source", "./", "path to the application source")
 	rootCmd.AddCommand(planCmd)
 
@@ -127,19 +122,18 @@ func main() {
 	runCmd.Flags().StringVar(&runCmdPlan, "plan", "", "name of a hosted action plan")
 	runCmd.Flags().StringVar(&runCmdSource, "source", "./", "application source path")
 	runCmd.Flags().BoolVar(&runCmdForce, "force", false, "plan and execute in one command")
-	runCmd.Flags().StringSliceVar(&runCmdStages, "stages", []string{"feedback", "package", "stage", "qa"}, "activity phases to run during the action plan")
-	runCmd.Flags().StringVar(&rootCmdServer, "server", "", "rpc server host")
-
+	runCmd.Flags().StringSliceVar(&runCmdStages, "stages", []string{"feedback", "package", "prerelease"}, "activity phases to run during the action plan")
+	// runCmd.Flags().StringVar(&rootCmdServer, "server", "", "rpc server host")
 	rootCmd.AddCommand(runCmd)
 
-	stackInitializeCmd.Flags().StringVar(&stackInitializeCmdFromPlan, "from-plan", "", "path to the plan file")
-	if err := stackInitializeCmd.MarkFlagRequired("from-plan"); err != nil {
+	rootCmd.AddCommand(configCmd)
+
+	configInitCmd.Flags().StringVar(&configInitFromPlan, "from-plan", "", "path to the plan file")
+	if err := configInitCmd.MarkFlagRequired("from-plan"); err != nil {
 		fmt.Println(err)
 		return
 	}
-	stackInitializeCmd.Flags().StringVar(&stackInitializeCmdOutput, "output", "inputs.env", "inputs output path")
-	stackCmd.AddCommand(stackInitializeCmd)
-	rootCmd.AddCommand(stackCmd)
+	configCmd.AddCommand(configInitCmd)
 
 	loginCmd.Flags().StringVar(&loginCmdUsername, "username", "", "login username")
 	if err := loginCmd.MarkFlagRequired("username"); err != nil {

@@ -1,0 +1,77 @@
+---
+slug: /architecture
+sidebar_position: 2
+title: Architecture
+---
+
+import ThemedImage from '@theme/ThemedImage'
+import ArchitectureImg from "./assets/architecture.png"
+import ArchitectureDarkImg from "./assets/architecture-dark.png"
+
+## Developer Intent
+
+**Developer Intent** is the desired process for the delivery of a software product. The desired software delivery process includes activities such as linting, testing, vulnerability scanning, building, and deploying.
+
+## Architecture
+
+### Action Plans
+
+The goal of the TruStacks engine is to accurately determine developer intent in the form an action plan. An action plan contains a list of actions and a list of the inputs that are required for the actions to be performed.
+
+#### Inputs
+
+Inputs are required parameters that are necessary for running the actions in an action plan. Inputs are different from configuration because they do not change the behavior of actions. Inputs are 
+
+### Guidelines
+
+TruStacks follows a set of guidelines to increase the efficacy of capturing developer intent.
+
+#### Single Source of Truth
+
+- There is one and only one source of truth. In general the source will be a single git repository with the contents of a single micro or monolithic application.
+
+- Monorepos and other full-stack sources can be considered a single source of truth if there is enough isolation between the components for them to be independently deployed. In this case the action plan would be derived from the root of a given monorepo path.
+
+#### Not Available Not Applicable
+
+- NANA reinforces immutable sources in that all source artifacts (ie. configs, scripts, tests, etc.) must be present during action plan generation in order to be used. 
+
+- Due to the high degree of fragmentation between project sources TruStacks does not admit actions into action plans where artifacts cannot be reliably predicted.
+
+:::tip
+NANA does not apply to source artifacts that do not impact action plan generation.
+:::
+
+## Engine Flow
+
+TruStacks uses the following flow to generate and execute action plans.
+
+![Engine Flow Diagram](./assets/overview-diagram.svg)
+
+#### Facts
+
+Fact collection is the first step in the Engine flow where the engine gathers information about languages, frameworks, tool artifacts such as .rc or yaml, source files and tests, tool configurations and any other source facts that could be used for determining [`Developer Intent`](#developer-intent).
+
+#### Rules & Actions
+
+After collecting facts the engine applies matching rules against the fact set. If rules are matched then the appropriate actions will be admitted into the action plan.
+
+Actions are individual functions written in [Dagger](https://dagger.io/) that perform steps in a CI/CD pipeline such as linting or unit testing.
+
+#### Action Plan
+
+The action plan contains the list of matched actions and their associated inputs. Inputs are configuration parameters or credentials used by actions that exists outside of the application source. 
+
+:::tip
+Inputs must be populated before executing an action plan.
+:::
+
+#### Schedule
+
+Actions admitted into an action plan are naive with no specific order. The scheduler places rules in appropriate order based on action classification and artifacts. 
+
+Rules can be classified in a fixed stage, or selected for execution in a stage at runtime by the scheduler as "feeder" actions. Feeder actions exist only to provide inputs to a downstream action such as a container build action that "feeds" the output image to a vulnerability scan or image publish action.
+
+The scheduler ensures that actions between stages and inner stage are executed in the order of the required inputs. If no input is required by a given action the scheduler will run the action at whatever point it is introduced into the schedule.
+
+<ThemedImage sources={{light: ArchitectureImg, dark: ArchitectureDarkImg}} />

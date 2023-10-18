@@ -2,107 +2,92 @@ package plan
 
 type InputField string
 
+type InputFieldSchema struct {
+	Type        string      `json:"type"`
+	Pattern     string      `json:"pattern,omitempty"`
+	Description string      `json:"description"`
+	Default     interface{} `json:"default,omitempty"`
+}
+
 type input interface {
-	Description() string
-	Link() string
+	Schema() InputFieldSchema
 }
 
 const ContainerRegistry InputField = "CONTAINER_REGISTRY"
 
-type ContainerRegistrySpec struct{}
+type ContainerRegistryInput struct{}
 
-func (input ContainerRegistrySpec) Description() string {
-	return `
-  The fully qualified URL of the container registry that will be used for both authentiation and as the destination 
-  where application container images will be be pushed.
-`
-}
-
-func (input ContainerRegistrySpec) Link() string {
-	return "container"
+func (input ContainerRegistryInput) Schema() InputFieldSchema {
+	return InputFieldSchema{
+		Type:        "String",
+		Description: "The fully qualified URL of the container registry that will be used for both authentiation and as the destination where application container images will be be pushed.",
+	}
 }
 
 const ContainerRegistryUsername InputField = "CONTAINER_REGISTRY_USERNAME"
 
-type ContainerRegistryUsernameSpec struct{}
+type ContainerRegistryUsernameInput struct{}
 
-func (input ContainerRegistryUsernameSpec) Description() string {
-	return `
-  The container registry username.
-`
-}
-
-func (input ContainerRegistryUsernameSpec) Link() string {
-	return "container"
+func (input ContainerRegistryUsernameInput) Schema() InputFieldSchema {
+	return InputFieldSchema{
+		Type:        "String",
+		Description: "The container registry username.",
+	}
 }
 
 const ContainerRegistryPassword InputField = "CONTAINER_REGISTRY_PASSWORD"
 
-type ContainerRegistryPasswordSpec struct{}
+type ContainerRegistryPasswordInput struct{}
 
-func (input ContainerRegistryPasswordSpec) Description() string {
-	return `
-  The container registry password.	
-`
-}
-
-func (input ContainerRegistryPasswordSpec) Link() string {
-	return "container"
-}
-
-const KubernetesStagingKubeconfig InputField = "KUBERNETES_STAGING_KUBECONFIG"
-
-type KubernetesStagingKubeconfigSpec struct{}
-
-func (input KubernetesStagingKubeconfigSpec) Description() string {
-	return `
-  The kubeconfig for a kubernetes cluster used for staging applications before release. Use X509 certificates with an 
-  appropriate service account and rbac roles with accees to the kubernetes cluster to avoid the need for proprietary 
-  authentication drivers for.
-`
-}
-
-func (input KubernetesStagingKubeconfigSpec) Link() string {
-	return "container"
-}
-
-const KubernetesNamespace InputField = "KUBERNETES_NAMESPACE"
-
-type KubernetesNamespaceSpec struct{}
-
-func (input KubernetesNamespaceSpec) Description() string {
-	return `
-  The namespace in the kubernetes cluster where the application will be deployed.	
-`
-}
-
-func (input KubernetesNamespaceSpec) Link() string {
-	return "container"
+func (input ContainerRegistryPasswordInput) Schema() InputFieldSchema {
+	return InputFieldSchema{
+		Type:        "String",
+		Description: "The container registry password.",
+	}
 }
 
 const SonarqubeToken InputField = "SONARQUBE_TOKEN"
 
-type SonarqubeTokenSpec struct{}
+type SonarqubeTokenInput struct{}
 
-func (input SonarqubeTokenSpec) Description() string {
-	return `
-  The sonarqube access token.	
-`
+func (input SonarqubeTokenInput) Schema() InputFieldSchema {
+	return InputFieldSchema{
+		Type:        "String",
+		Description: "The sonarqube access token.",
+	}
 }
 
-func (input SonarqubeTokenSpec) Link() string {
-	return "container"
+const ArgoCDServer InputField = "ARGOCD_SERVER"
+
+type ArgoCDServerInput struct{}
+
+func (input ArgoCDServerInput) Schema() InputFieldSchema {
+	return InputFieldSchema{
+		Type:        "String",
+		Description: "The ArgoCD server URL",
+	}
+}
+
+const ArgoCDAuthToken InputField = "ARGOCD_AUTH_TOKEN"
+
+type ArgoCDAuthTokenInput struct{}
+
+func (input ArgoCDAuthTokenInput) Schema() InputFieldSchema {
+	return InputFieldSchema{
+		Type:        "String",
+		Description: "The ArgoCD authentication token",
+	}
 }
 
 var vars = map[string]input{
-	"CONTAINER_REGISTRY":            ContainerRegistrySpec{},
-	"CONTAINER_REGISTRY_USERNAME":   ContainerRegistryUsernameSpec{},
-	"CONTAINER_REGISTRY_PASSWORD":   ContainerRegistryPasswordSpec{},
-	"KUBERNETES_STAGING_KUBECONFIG": KubernetesStagingKubeconfigSpec{},
-	"KUBERNETES_NAMESPACE":          KubernetesNamespaceSpec{},
-	"SONARQUBE_TOKEN":               SonarqubeTokenSpec{},
+	"CONTAINER_REGISTRY":          ContainerRegistryInput{},
+	"CONTAINER_REGISTRY_USERNAME": ContainerRegistryUsernameInput{},
+	"CONTAINER_REGISTRY_PASSWORD": ContainerRegistryPasswordInput{},
+	"SONARQUBE_TOKEN":             SonarqubeTokenInput{},
+	"ARGOCD_SERVER":               ArgoCDServerInput{},
+	"ARGOCD_AUTH_TOKEN":           ArgoCDAuthTokenInput{},
 }
 
-func GetInputSpec(name string) input {
+func GetInput(name string) input {
 	return vars[name]
 }

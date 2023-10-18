@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"dagger.io/dagger"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
 	"github.com/filecoin-project/go-jsonrpc"
 	"github.com/trustacks/trustacks/pkg/engine"
 	"github.com/trustacks/trustacks/pkg/plan"
@@ -22,7 +24,7 @@ func RunPlan(source, name string) error {
 		return err
 	}
 	planPath := fmt.Sprintf("%s.plan", name)
-	if err := os.WriteFile(planPath, []byte(spec), 0600); err != nil {
+	if err := os.WriteFile(planPath, []byte(spec), 0644); err != nil {
 		return err
 	}
 	fmt.Printf("plan filed saved at: %s\n", planPath)
@@ -107,15 +109,15 @@ func getHostedSpec(planName, server string) (map[string]interface{}, string, err
 func RunCmd(source, planName, planFile, server string, stages []string, force bool) error {
 	var err error
 	var planData map[string]interface{}
-	if planFile != "" {
-		planData, err = getLocalSpec(source, planFile, force)
-	} else {
-		var sourceSubpath string
+	var sourceSubpath string
+	if planName != "" {
 		planData, sourceSubpath, err = getHostedSpec(planName, server)
 		if err != nil {
 			return err
 		}
 		source = filepath.Join(source, sourceSubpath)
+	} else {
+		planData, err = getLocalSpec(source, planFile, force)
 	}
 	if err != nil {
 		return err
@@ -129,33 +131,39 @@ func RunCmd(source, planName, planFile, server string, stages []string, force bo
 		return err
 	}
 	if err := plan.Run(source, string(spec), client, stages); err != nil {
-		return err
+		log.Error("", "err", err)
+		os.Exit(1)
 	}
 	return nil
 }
 
-func StackInitializeCmd(planFile, output string) error {
-	plan := map[string]interface{}{}
+func ConfigInitCmd(planFile string) error {
+	planContents := map[string]interface{}{}
 	contents, err := os.ReadFile(planFile)
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(contents, &plan); err != nil {
+	if err := json.Unmarshal(contents, &planContents); err != nil {
 		return err
 	}
-	if _, err := os.Stat(output); !os.IsNotExist(err) {
-		return fmt.Errorf("error: %s already exists", output)
+	output := fmt.Sprintf("./%s.cfgu.json", strings.Replace(planFile, ".plan", "", 1))
+	schema := map[string]interface{}{}
+	if _, ok := planContents["inputs"]; ok {
+		for _, field := range planContents["inputs"].([]interface{}) {
+			input := plan.GetInput(field.(string))
+			schema[field.(string)] = input.Schema()
+		}
 	}
-	if _, ok := plan["inputs"]; ok {
-		data := bytes.NewBufferString("")
-		for _, field := range plan["inputs"].([]interface{}) {
-			if _, err := data.WriteString(fmt.Sprintf("export %s=\n", field.(string))); err != nil {
-				return err
-			}
-		}
-		if err := os.WriteFile(output, data.Bytes(), 0644); err != nil {
-			return err
-		}
+	data, err := json.Marshal(schema)
+	if err != nil {
+		return err
+	}
+	var prettySchema bytes.Buffer
+	if err := json.Indent(&prettySchema, data, "", "  "); err != nil {
+		return err
+	}
+	if err := os.WriteFile(output, prettySchema.Bytes(), 0644); err != nil {
+		return err
 	}
 	return nil
 }
@@ -209,23 +217,6 @@ func ExplainCmd(path, docsURL string) error {
 					spec.Description,
 				)
 			}
-		}
-		if len(actionPlan.Inputs) > 0 {
-			fmt.Printf("\nInputs\n------\n\n")
-			for _, input := range actionPlan.Inputs {
-				spec := plan.GetInputSpec(input)
-				if spec == nil {
-					continue
-				}
-				fmt.Printf(
-					"▸ %s - %s\n%s\n",
-					lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(input),
-					fmt.Sprintf("%s/inputs#%s", docsURL, spec.Link()),
-					spec.Description(),
-				)
-			}
-			fmt.Println("Run the following command to generate a keyed input file for this plan")
-			fmt.Println(lipgloss.NewStyle().Render(fmt.Sprintf("\n  ⤷ tsctl stack init --from-plan %s\n", path)))
 		}
 	} else {
 		fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("#FFBF00")).Render("* No actions could be generated from the provided source"))
