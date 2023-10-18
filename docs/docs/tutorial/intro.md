@@ -17,5 +17,5 @@ In this guide we will walk you through:
 3. Running the action plan
 
 :::tip
-☕ We've got a lot to cover, so grab a cup of coffee, tea, or a treat.
+☕ Grab a cup of coffee, tea, or a treat.
 :::
