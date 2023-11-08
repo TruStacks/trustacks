@@ -28,14 +28,17 @@ type ActionPlan struct {
 
 type Action struct {
 	Name                   string
+	DisplayName            string
+	Description            string
 	Image                  func(*Config) string
-	Script                 func(*dagger.Container, map[string]interface{}, *ActionUtilities) error
 	Stage                  Stage
+	Script                 func(*dagger.Container, map[string]interface{}, *ActionUtilities) error
 	InputArtifacts         []Artifact
 	OptionalInputArtifacts []Artifact
 	OutputArtifacts        []Artifact
 	Caches                 []string
 	Secrets                []string
+	Inputs                 []string
 }
 
 type scheduler struct {
@@ -217,7 +220,7 @@ func (ap *ActionPlan) ToJson() (string, error) {
 
 func (ap *ActionPlan) runAction(source string, action *Action, client *dagger.Client, config *Config) error {
 	log.Info("Queuing action", "action", action.Name)
-	container := client.Container().From(action.Image(config))
+	container := client.Pipeline(action.Name).Container().From(action.Image(config))
 	container = container.WithMountedDirectory("/src", client.Host().Directory(source)).WithWorkdir("/src")
 	for _, path := range action.Caches {
 		container = container.WithMountedCache(path, client.CacheVolume(ap.id+path))
@@ -248,6 +251,17 @@ func Run(source, spec string, client *dagger.Client, stages []string) error {
 	}
 	missingInputs := []string{}
 	for _, input := range ap.Inputs {
+		stagedActionInputs := []string{}
+		for _, name := range ap.Actions {
+			for _, stage := range stages {
+				fmt.Println(name)
+				action, ok := registeredActions[name]
+				if ok && GetStage(action.Stage) == stage {
+					fmt.Println(action.Inputs)
+				}
+			}
+		}
+		fmt.Println(stagedActionInputs)
 		value := os.Getenv(input)
 		if value == "" {
 			missingInputs = append(missingInputs, input)
@@ -256,7 +270,10 @@ func Run(source, spec string, client *dagger.Client, stages []string) error {
 		}
 	}
 	if len(missingInputs) > 0 {
-		return fmt.Errorf("missing inputs: %s", strings.Join(missingInputs, ", "))
+		return fmt.Errorf(
+			"the following inpust are required in order to run the action plan: %s.\nRun 'tsctl explain' to view inputs",
+			strings.Join(missingInputs, ", "),
+		)
 	}
 	actions := ap.Actions
 	schedule, err := newScheduler().schedule(actions)

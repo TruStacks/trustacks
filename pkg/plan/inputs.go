@@ -79,6 +79,17 @@ func (input ArgoCDAuthTokenInput) Schema() InputFieldSchema {
 	}
 }
 
+const GithubToken InputField = "GITHUB_TOKEN"
+
+type GithubTokenInput struct{}
+
+func (input GithubTokenInput) Schema() InputFieldSchema {
+	return InputFieldSchema{
+		Type:        "String",
+		Description: "The ArgoCD authentication token",
+	}
+}
+
 var vars = map[string]input{
 	"CONTAINER_REGISTRY":          ContainerRegistryInput{},
 	"CONTAINER_REGISTRY_USERNAME": ContainerRegistryUsernameInput{},
@@ -86,6 +97,7 @@ var vars = map[string]input{
 	"SONARQUBE_TOKEN":             SonarqubeTokenInput{},
 	"ARGOCD_SERVER":               ArgoCDServerInput{},
 	"ARGOCD_AUTH_TOKEN":           ArgoCDAuthTokenInput{},
+	"GITHUB_TOKEN":                GithubTokenInput{},
 }
 
 func GetInput(name string) input {

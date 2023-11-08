@@ -10,12 +10,14 @@ type Engine struct {
 }
 
 func (engine *Engine) CreateActionPlan(source string, simple bool) (string, error) {
-	facts := mapset.NewSet[Fact]()
 	actionPlan := plan.NewActionPlan(nil)
 	if err := engine.runSourceCollector(source); err != nil {
 		return "", err
 	}
-	ruleset.gatherFacts(source, engine.sourceCollector, facts, nil)
+	facts, err := ruleset.gatherFacts(source, engine.sourceCollector, nil)
+	if err != nil {
+		return "", err
+	}
 	for _, resolver := range admissionResolvers {
 		pass := true
 		for _, fact := range resolver.criteria {
@@ -128,25 +130,27 @@ func (rs *Ruleset) append(parentRule, childRule *Rule) {
 	parentNode.addChild(childNode)
 }
 
-func (rs *Ruleset) gatherFacts(source string, collector *SourceCollector, facts mapset.Set[Fact], nodes []*RulesetNode) error {
+func (rs *Ruleset) gatherFacts(source string, collector *SourceCollector, nodes []*RulesetNode) (mapset.Set[Fact], error) {
+	facts := mapset.NewSet[Fact]()
 	if nodes == nil {
 		nodes = rs.root
 	}
 	for _, node := range nodes {
 		fact, err := (*node.rule)(source, collector, facts)
 		if err != nil {
-			return err
+			return facts, err
 		}
 		if fact != NilFact {
 			facts.Add(fact)
 			if node.childNodes != nil {
-				if err := rs.gatherFacts(source, collector, facts, node.childNodes); err != nil {
-					return err
+				facts, err = rs.gatherFacts(source, collector, node.childNodes)
+				if err != nil {
+					return facts, err
 				}
 			}
 		}
 	}
-	return nil
+	return facts, nil
 }
 
 func NewRuleset() *Ruleset {

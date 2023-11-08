@@ -6,8 +6,7 @@ const (
 	OnDemandStage Stage = iota
 	FeedbackStage
 	PackageStage
-	StageStage
-	QAStage
+	PreleaseStage
 	ReleaseStage
 )
 
@@ -17,4 +16,8 @@ var actionStages = []string{
 	"package",
 	"prerelease",
 	"release",
+}
+
+func GetStage(stage Stage) string {
+	return actionStages[stage]
 }
