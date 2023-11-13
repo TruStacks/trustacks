@@ -10,12 +10,12 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/stretchr/testify/assert"
-	"github.com/trustacks/trustacks/pkg/plan"
+	"github.com/trustacks/trustacks/pkg/engine"
 )
 
 func TestExtraGlobalOptions(t *testing.T) {
-	config := &plan.Config{
-		ArgoCD: plan.ConfigArgoCD{
+	config := &engine.Config{
+		ArgoCD: engine.ConfigArgoCD{
 			Insecure: true,
 			GRPCWeb:  true,
 		},

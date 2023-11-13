@@ -5,19 +5,20 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
-var trivyImageAction = &plan.Action{
-	Name:   "trivyImage",
-	Image:  func(_ *plan.Config) string { return "aquasec/trivy" },
-	Stage:  plan.FeedbackStage,
-	Caches: []string{"/src/node_modules"},
-	InputArtifacts: []plan.Artifact{
-		plan.ContainerImageArtifact,
+var trivyImageAction = &engine.Action{
+	Name:        "trivyImage",
+	DisplayName: "Trivy Scan",
+	Description: "Scan the container image with the trivy security scanner.",
+	Image:       func(_ *engine.Config) string { return "aquasec/trivy" },
+	Stage:       engine.FeedbackStage,
+	Caches:      []string{"/src/node_modules"},
+	InputArtifacts: []engine.Artifact{
+		engine.ContainerImageArtifact,
 	},
-	Script: func(container *dagger.Container, _ map[string]interface{}, utils *plan.ActionUtilities) error {
-		container, imageMount, err := utils.MountImage(container, plan.ContainerImageArtifact)
+	Script: func(container *dagger.Container, _ map[string]interface{}, utils *engine.ActionUtilities) error {
+		container, imageMount, err := utils.MountImage(container, engine.ContainerImageArtifact)
 		if err != nil {
 			return err
 		}
@@ -25,18 +26,9 @@ var trivyImageAction = &plan.Action{
 		_, err = container.Stdout(context.Background())
 		return err
 	},
+	AdmissionCriteria: []engine.Fact{TrivyConfigExistsFact},
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        trivyImageAction.Name,
-			DisplayName: "Trivy Scan",
-			Description: "Scan the container image with the trivy security scanner.",
-		},
-		[]engine.Fact{TrivyConfigExistsFact},
-		nil,
-		nil,
-	)
-	plan.RegisterAction(trivyImageAction)
+	engine.RegisterAction(trivyImageAction)
 }

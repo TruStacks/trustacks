@@ -1,4 +1,4 @@
-package run
+package internal
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"dagger.io/dagger"
 	"github.com/charmbracelet/log"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 type RunCmdOptions struct {
@@ -22,7 +21,7 @@ type RunCmdOptions struct {
 func removeReleaseStage(stages []string) []string {
 	stageIndex := -1
 	for i, stage := range stages {
-		if stage == plan.GetStage(plan.ReleaseStage) {
+		if stage == engine.GetStage(engine.ReleaseStage) {
 			stageIndex = i
 		}
 	}
@@ -62,7 +61,7 @@ func RunCmd(options *RunCmdOptions) error {
 	if options.Prerelease {
 		removeReleaseStage(options.Stages)
 	}
-	if err := plan.Run(options.Source, string(spec), client, options.Stages); err != nil {
+	if err := engine.Run(options.Source, string(spec), client, options.Stages); err != nil {
 		log.Error("", "err", err)
 		os.Exit(1)
 	}

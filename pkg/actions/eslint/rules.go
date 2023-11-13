@@ -17,7 +17,7 @@ var (
 var ESLintConfigExistsRule engine.Rule = func(source string, _ engine.Collector, _ mapset.Set[engine.Fact]) (engine.Fact, error) {
 	var fact = engine.NilFact
 	var eslintConfig string
-	var eslintConfigPatterns = []string{
+	var eslintConfigFiles = []string{
 		".eslintrc.js",
 		".eslintrc.cjs",
 		".eslintrc.yaml",
@@ -29,12 +29,15 @@ var ESLintConfigExistsRule engine.Rule = func(source string, _ engine.Collector,
 	if err != nil {
 		return fact, err
 	}
-eslintSourcePatternMatch:
+	matched := false
 	for _, entry := range entries {
-		for _, pattern := range eslintConfigPatterns {
-			if pattern == entry.Name() {
+		if matched {
+			break
+		}
+		for _, config := range eslintConfigFiles {
+			if config == entry.Name() {
 				eslintConfig = entry.Name()
-				break eslintSourcePatternMatch
+				matched = true
 			}
 		}
 	}

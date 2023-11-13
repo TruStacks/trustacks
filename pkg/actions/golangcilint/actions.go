@@ -6,17 +6,18 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 const golangciLintVersion = "v1.53.3"
 
-var golangCILintRun = &plan.Action{
-	Name:   "golangCILintRun",
-	Image:  func(_ *plan.Config) string { return "golang:alpine" },
-	Stage:  plan.FeedbackStage,
-	Caches: []string{"/go/pkg/mod"},
-	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
+var golangCILintRun = &engine.Action{
+	Name:        "golangCILintRun",
+	DisplayName: "GolangCILint Run",
+	Description: "Lint the source with golangci-lint.",
+	Image:       func(_ *engine.Config) string { return "golang:alpine" },
+	Stage:       engine.FeedbackStage,
+	Caches:      []string{"/go/pkg/mod"},
+	Script: func(container *dagger.Container, _ map[string]interface{}, _ *engine.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "bash", "curl", "git"})
 		container = container.WithExec([]string{
 			"/bin/sh",
@@ -27,18 +28,9 @@ var golangCILintRun = &plan.Action{
 		_, err := container.Stdout(context.Background())
 		return err
 	},
+	AdmissionCriteria: []engine.Fact{GolangCILintConfigExistsFact},
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        golangCILintRun.Name,
-			DisplayName: "GolangCILint Run",
-			Description: "Lint the source with golangci-lint.",
-		},
-		[]engine.Fact{GolangCILintConfigExistsFact},
-		nil,
-		nil,
-	)
-	plan.RegisterAction(golangCILintRun)
+	engine.RegisterAction(golangCILintRun)
 }

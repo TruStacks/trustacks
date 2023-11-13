@@ -1,4 +1,4 @@
-package plan
+package engine
 
 import (
 	"context"
@@ -11,13 +11,13 @@ import (
 	"github.com/lithammer/shortuuid"
 )
 
-type Artifact int
-
 const (
 	ApplicationDistArtifact Artifact = iota
 	ContainerImageArtifact
 	SemanticVersionArtifact
 )
+
+type Artifact int
 
 type ArtifactStore struct {
 	client    *dagger.Client
@@ -25,8 +25,34 @@ type ArtifactStore struct {
 	mounts    []*artifactMount
 }
 
-func (as *ArtifactStore) artifactPath(artifact Artifact) string {
-	return fmt.Sprintf("/tmp/_artifacts/%d", artifact)
+func (as *ArtifactStore) Mount(container *dagger.Container, artifact Artifact) (*dagger.Container, *artifactMount, error) {
+	if _, ok := as.artifacts[artifact]; !ok {
+		return nil, nil, errors.New("artifact does not exists")
+	}
+	mount, err := newArtifactMount(artifact)
+	if err != nil {
+		return nil, nil, err
+	}
+	as.mounts = append(as.mounts, mount)
+	if _, err = as.artifacts[artifact].Directory(as.artifactPath(artifact)).Export(context.Background(), mount.hostDir); err != nil {
+		return nil, nil, err
+	}
+	return container.WithDirectory(mount.path, as.client.Host().Directory(mount.hostDir)), mount, nil
+}
+
+func (as *ArtifactStore) MountImage(container *dagger.Container, artifact Artifact) (*dagger.Container, *artifactMount, error) {
+	if _, ok := as.artifacts[artifact]; !ok {
+		return nil, nil, errors.New("artifact does not exists")
+	}
+	mount, err := newArtifactMount(artifact)
+	if err != nil {
+		return nil, nil, err
+	}
+	as.mounts = append(as.mounts, mount)
+	if _, err = as.artifacts[artifact].Export(context.Background(), filepath.Join(mount.hostDir, "image.tar")); err != nil {
+		return nil, nil, err
+	}
+	return container.WithDirectory(mount.path, as.client.Host().Directory(mount.hostDir)), mount, nil
 }
 
 func (as *ArtifactStore) Export(container *dagger.Container, artifact Artifact, path string) error {
@@ -47,36 +73,8 @@ func (as *ArtifactStore) ExportContainer(container *dagger.Container, artifact A
 	return nil
 }
 
-var ErrArtifactNotFound = errors.New("artifact does not exists")
-
-func (as *ArtifactStore) Mount(container *dagger.Container, artifact Artifact) (*dagger.Container, *artifactMount, error) {
-	if _, ok := as.artifacts[artifact]; !ok {
-		return nil, nil, ErrArtifactNotFound
-	}
-	mount, err := newArtifactMount(artifact)
-	if err != nil {
-		return nil, nil, err
-	}
-	as.mounts = append(as.mounts, mount)
-	if _, err = as.artifacts[artifact].Directory(as.artifactPath(artifact)).Export(context.Background(), mount.hostDir); err != nil {
-		return nil, nil, err
-	}
-	return container.WithDirectory(mount.path, as.client.Host().Directory(mount.hostDir)), mount, nil
-}
-
-func (as *ArtifactStore) MountImage(container *dagger.Container, artifact Artifact) (*dagger.Container, *artifactMount, error) {
-	if _, ok := as.artifacts[artifact]; !ok {
-		return nil, nil, ErrArtifactNotFound
-	}
-	mount, err := newArtifactMount(artifact)
-	if err != nil {
-		return nil, nil, err
-	}
-	as.mounts = append(as.mounts, mount)
-	if _, err = as.artifacts[artifact].Export(context.Background(), filepath.Join(mount.hostDir, "image.tar")); err != nil {
-		return nil, nil, err
-	}
-	return container.WithDirectory(mount.path, as.client.Host().Directory(mount.hostDir)), mount, nil
+func (as *ArtifactStore) artifactPath(artifact Artifact) string {
+	return fmt.Sprintf("/tmp/_artifacts/%d", artifact)
 }
 
 func newArtifactStore(client *dagger.Client) *ArtifactStore {

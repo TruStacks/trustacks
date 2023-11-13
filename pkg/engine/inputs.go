@@ -1,4 +1,14 @@
-package plan
+package engine
+
+var inputs = map[string]input{
+	"CONTAINER_REGISTRY":          ContainerRegistryInput{},
+	"CONTAINER_REGISTRY_USERNAME": ContainerRegistryUsernameInput{},
+	"CONTAINER_REGISTRY_PASSWORD": ContainerRegistryPasswordInput{},
+	"SONARQUBE_TOKEN":             SonarqubeTokenInput{},
+	"ARGOCD_SERVER":               ArgoCDServerInput{},
+	"ARGOCD_AUTH_TOKEN":           ArgoCDAuthTokenInput{},
+	"GITHUB_TOKEN":                GithubTokenInput{},
+}
 
 type InputField string
 
@@ -90,16 +100,6 @@ func (input GithubTokenInput) Schema() InputFieldSchema {
 	}
 }
 
-var vars = map[string]input{
-	"CONTAINER_REGISTRY":          ContainerRegistryInput{},
-	"CONTAINER_REGISTRY_USERNAME": ContainerRegistryUsernameInput{},
-	"CONTAINER_REGISTRY_PASSWORD": ContainerRegistryPasswordInput{},
-	"SONARQUBE_TOKEN":             SonarqubeTokenInput{},
-	"ARGOCD_SERVER":               ArgoCDServerInput{},
-	"ARGOCD_AUTH_TOKEN":           ArgoCDAuthTokenInput{},
-	"GITHUB_TOKEN":                GithubTokenInput{},
-}
-
 func GetInput(name string) input {
-	return vars[name]
+	return inputs[name]
 }

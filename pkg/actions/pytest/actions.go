@@ -9,19 +9,20 @@ import (
 	"github.com/trustacks/trustacks/pkg/actions/python"
 	"github.com/trustacks/trustacks/pkg/actions/tox"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
-var pytestRunAction = &plan.Action{
-	Name: "pytestRun",
-	Image: func(config *plan.Config) string {
+var pytestRunAction = &engine.Action{
+	Name:        "pytestRun",
+	DisplayName: "PyTest Run",
+	Description: "Run the python test suite using pytest",
+	Image: func(config *engine.Config) string {
 		if config.Python.Version != "" {
 			return fmt.Sprintf("python:%s", config.Python.Version)
 		}
 		return "python"
 	},
-	Stage: plan.FeedbackStage,
-	Script: func(container *dagger.Container, _ map[string]interface{}, utils *plan.ActionUtilities) error {
+	Stage: engine.FeedbackStage,
+	Script: func(container *dagger.Container, _ map[string]interface{}, utils *engine.ActionUtilities) error {
 		config := utils.GetConfig()
 		container = container.WithExec([]string{"apt", "update"})
 		container = container.WithExec([]string{"apt", "install", "gcc", "-y"})
@@ -38,21 +39,13 @@ var pytestRunAction = &plan.Action{
 		_, err = container.Stdout(context.Background())
 		return err
 	},
+	AdmissionCriteria: []engine.Fact{PytestDependencyExistsFact},
+	ExclusionCriteria: []engine.Fact{tox.ToxIniExistsFact},
 }
 
 func init() {
 	engine.RegisterPatternMatches([]engine.PatternMatch{
 		{Kind: engine.FilePatternMatch, Pattern: "test_.*.py"},
 	})
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        pytestRunAction.Name,
-			DisplayName: "PyTest Run",
-			Description: "Run the python test suite using pytest",
-		},
-		[]engine.Fact{PytestDependencyExistsFact},
-		[]engine.Fact{tox.ToxIniExistsFact},
-		nil,
-	)
-	plan.RegisterAction(pytestRunAction)
+	engine.RegisterAction(pytestRunAction)
 }

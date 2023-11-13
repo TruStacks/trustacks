@@ -1,45 +1,12 @@
-package plan
+package engine
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
-	"time"
 
-	"dagger.io/dagger"
 	"github.com/charmbracelet/log"
 	mapset "github.com/deckarep/golang-set/v2"
 )
-
-type ActionSpec struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName,omitempty"`
-	Description string `json:"description,omitempty"`
-}
-
-type ActionPlan struct {
-	Actions   []string `json:"actions"`
-	Inputs    []string `json:"inputs,omitempty"`
-	vars      map[string]interface{}
-	id        string
-	artifacts *ArtifactStore
-}
-
-type Action struct {
-	Name                   string
-	DisplayName            string
-	Description            string
-	Image                  func(*Config) string
-	Stage                  Stage
-	Script                 func(*dagger.Container, map[string]interface{}, *ActionUtilities) error
-	InputArtifacts         []Artifact
-	OptionalInputArtifacts []Artifact
-	OutputArtifacts        []Artifact
-	Caches                 []string
-	Secrets                []string
-	Inputs                 []string
-}
 
 type scheduler struct {
 	requiredInputs map[Artifact]mapset.Set[Stage]
@@ -91,7 +58,7 @@ func (s *scheduler) assignOnDemandActions(assignments map[Stage]mapset.Set[*Acti
 	unmatchableWatchList := mapset.NewSet[*Action]()
 	for {
 		// if on demand actions are nil or empty then all actions are assigned
-		// or no on demand actions exist in the schedule.
+		// or no on demand actions exist in the action plan schedule.
 		if assignments[OnDemandStage] == nil || assignments[OnDemandStage].Cardinality() == 0 {
 			break
 		}
@@ -109,9 +76,10 @@ func (s *scheduler) assignOnDemandActions(assignments map[Stage]mapset.Set[*Acti
 							firstOccurance = stages[i]
 						}
 					}
-					// if the first occurance of the input is in the on demand
+					// if the first dependency of the input is in the on demand
 					// stage, then we must wait until the next loop iteration
-					// for an input transfer.
+					// for the dependant action to be assigned to a finite
+					// activity stage.
 					if firstOccurance == OnDemandStage {
 						// if the action is already in the unmatched list then
 						// the matching failed for two loop cycles.
@@ -126,7 +94,7 @@ func (s *scheduler) assignOnDemandActions(assignments map[Stage]mapset.Set[*Acti
 						unmatchableWatchList.Add(action)
 						continue
 					}
-					// transfer the action from the on demand staage to the
+					// transfer the action from the on demand stage to the
 					// required activity stage.
 					assignments[firstOccurance].Add(action)
 					assignments[OnDemandStage].Remove(action)
@@ -141,7 +109,7 @@ func (s *scheduler) assignOnDemandActions(assignments map[Stage]mapset.Set[*Acti
 				}
 			}
 			if !matched {
-				err := fmt.Errorf("one or more outputs from on-demand action '%s' could not be matched to an action in a fixed activity state. this action will be excluded from the action plan", action.Name)
+				err := fmt.Errorf("one or more outputs from on-demand action '%s' could not be matched to an action in a finite stage. this action will be excluded from the action plan", action.Name)
 				log.Info("", "err", err)
 				assignments[OnDemandStage].Remove(action)
 			}
@@ -203,116 +171,4 @@ func (s *scheduler) schedule(actions []string) (map[Stage][]*Action, error) {
 		return nil, err
 	}
 	return sortedAssignments, nil
-}
-
-func (ap *ActionPlan) AddAction(name string, inputs []string) {
-	ap.Actions = append(ap.Actions, name)
-	ap.Inputs = append(ap.Inputs, inputs...)
-}
-
-func (ap *ActionPlan) ToJson() (string, error) {
-	data, err := json.Marshal(ap)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
-func (ap *ActionPlan) runAction(source string, action *Action, client *dagger.Client, config *Config) error {
-	log.Info("Queuing action", "action", action.Name)
-	container := client.Pipeline(action.Name).Container().From(action.Image(config))
-	container = container.WithMountedDirectory("/src", client.Host().Directory(source)).WithWorkdir("/src")
-	for _, path := range action.Caches {
-		container = container.WithMountedCache(path, client.CacheVolume(ap.id+path))
-	}
-	return action.Script(container, ap.vars, newActionUtilities(client, ap.artifacts, config))
-}
-
-func NewActionPlan(client *dagger.Client) *ActionPlan {
-	plan := &ActionPlan{
-		vars: make(map[string]interface{}),
-		id:   time.Now().Format(time.RFC3339),
-	}
-	if client != nil {
-		plan.artifacts = newArtifactStore(client)
-	}
-	return plan
-}
-
-func Run(source, spec string, client *dagger.Client, stages []string) error {
-	ap := NewActionPlan(client)
-	defer func() {
-		for _, mount := range ap.artifacts.mounts {
-			mount.Close()
-		}
-	}()
-	if err := json.Unmarshal([]byte(spec), &ap); err != nil {
-		return err
-	}
-	missingInputs := []string{}
-	for _, input := range ap.Inputs {
-		stagedActionInputs := []string{}
-		for _, name := range ap.Actions {
-			for _, stage := range stages {
-				fmt.Println(name)
-				action, ok := registeredActions[name]
-				if ok && GetStage(action.Stage) == stage {
-					fmt.Println(action.Inputs)
-				}
-			}
-		}
-		fmt.Println(stagedActionInputs)
-		value := os.Getenv(input)
-		if value == "" {
-			missingInputs = append(missingInputs, input)
-		} else {
-			ap.vars[input] = value
-		}
-	}
-	if len(missingInputs) > 0 {
-		return fmt.Errorf(
-			"the following inpust are required in order to run the action plan: %s.\nRun 'tsctl explain' to view inputs",
-			strings.Join(missingInputs, ", "),
-		)
-	}
-	actions := ap.Actions
-	schedule, err := newScheduler().schedule(actions)
-	if err != nil {
-		return err
-	}
-	stages = append([]string{"null"}, stages...)
-	for stage, actions := range schedule {
-		for _, stg := range stages {
-			if stg == actionStages[stage] {
-				for _, action := range actions {
-					log.Info(fmt.Sprintf("> %s", action.Name))
-				}
-			}
-		}
-	}
-	config, err := NewConfig()
-	if err != nil {
-		return err
-	}
-	for stageId, key := range actionStages {
-		for _, name := range stages {
-			if key == name {
-				stage := Stage(stageId)
-				if actions, ok := schedule[stage]; ok {
-					for _, action := range actions {
-						if err := ap.runAction(source, action, client, config); err != nil {
-							return err
-						}
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-var registeredActions = map[string]*Action{}
-
-func RegisterAction(action *Action) {
-	registeredActions[action.Name] = action
 }

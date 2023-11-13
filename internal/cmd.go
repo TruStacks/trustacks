@@ -12,7 +12,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/filecoin-project/go-jsonrpc"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
 func PlanCmd(source, name string) error {
@@ -40,7 +39,7 @@ func ConfigInitCmd(planFile string) error {
 	schema := map[string]interface{}{}
 	if _, ok := planContents["inputs"]; ok {
 		for _, field := range planContents["inputs"].([]interface{}) {
-			input := plan.GetInput(field.(string))
+			input := engine.GetInput(field.(string))
 			schema[field.(string)] = input.Schema()
 		}
 	}
@@ -89,7 +88,7 @@ func LoginCmd(host, username, password string) error {
 
 func ExplainCmd(path string, fromSource bool) error {
 	var data []byte
-	var actionPlan plan.ActionPlan
+	var actionPlan engine.ActionPlan
 	if fromSource {
 		spec, err := engine.New().CreateActionPlan("./", false)
 		if err != nil {
@@ -108,23 +107,23 @@ func ExplainCmd(path string, fromSource bool) error {
 	}
 	if len(actionPlan.Actions) > 0 {
 		fmt.Printf("\nActions\n-------\n\n")
-		for _, action := range actionPlan.Actions {
-			spec := engine.GetActionSpec(action)
-			if spec != nil {
+		for _, name := range actionPlan.Actions {
+			action := engine.GetAction(name)
+			if action != nil {
 				fmt.Printf(
 					"▸ %s - %s\n\n",
-					lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(spec.DisplayName),
-					spec.Description,
+					lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(action.DisplayName),
+					action.Description,
 				)
 			}
 		}
 		if len(actionPlan.Inputs) > 0 {
 			fmt.Printf("\nInputs\n------\n\n")
 			for _, input := range actionPlan.Inputs {
-				schema := plan.GetInput(input).Schema()
+				schema := engine.GetInput(string(input)).Schema()
 				fmt.Printf(
 					"▸ %s - %s\n\n",
-					lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(input),
+					lipgloss.NewStyle().Foreground(lipgloss.Color("#897dbb")).Render(string(input)),
 					schema.Description,
 				)
 			}

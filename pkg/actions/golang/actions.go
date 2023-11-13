@@ -5,19 +5,21 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
-var golangTest = &plan.Action{
-	Name:   "golangTest",
-	Image:  func(_ *plan.Config) string { return "golang" },
-	Stage:  plan.FeedbackStage,
-	Caches: []string{"/go/pkg/mod"},
-	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
+var golangTest = &engine.Action{
+	Name:        "golangTest",
+	DisplayName: "Golang Test",
+	Description: "Run the test suite with go test.",
+	Image:       func(_ *engine.Config) string { return "golang" },
+	Stage:       engine.FeedbackStage,
+	Caches:      []string{"/go/pkg/mod"},
+	Script: func(container *dagger.Container, _ map[string]interface{}, _ *engine.ActionUtilities) error {
 		container = container.WithExec([]string{"go", "test", "./...", "-v", "-short", "-cover"})
 		_, err := container.Stdout(context.Background())
 		return err
 	},
+	AdmissionCriteria: []engine.Fact{GolangTestsExistFact},
 }
 
 func init() {
@@ -28,15 +30,5 @@ func init() {
 			Exclusions: &[]string{"testdata", "vendor"},
 		},
 	})
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        golangTest.Name,
-			DisplayName: "Golang Test",
-			Description: "Run the test suite with go test.",
-		},
-		[]engine.Fact{GolangTestsExistFact},
-		nil,
-		nil,
-	)
-	plan.RegisterAction(golangTest)
+	engine.RegisterAction(golangTest)
 }

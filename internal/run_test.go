@@ -1,4 +1,4 @@
-package run
+package internal
 
 import (
 	"os"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	_ "github.com/trustacks/trustacks/pkg/actions"
-	"github.com/trustacks/trustacks/pkg/plan"
+	"github.com/trustacks/trustacks/pkg/engine"
 )
 
 // makeTestdata creates the golang source fixutres programatically
@@ -36,13 +36,13 @@ func makeTestdata(t *testing.T) (string, func()) {
 
 func TestRemoveReleaseStages(t *testing.T) {
 	stages := []string{
-		plan.GetStage(plan.FeedbackStage),
-		plan.GetStage(plan.PreleaseStage),
-		plan.GetStage(plan.ReleaseStage),
+		engine.GetStage(engine.FeedbackStage),
+		engine.GetStage(engine.PreleaseStage),
+		engine.GetStage(engine.ReleaseStage),
 	}
-	assert.Contains(t, stages, plan.GetStage(plan.ReleaseStage))
+	assert.Contains(t, stages, engine.GetStage(engine.ReleaseStage))
 	stages = removeReleaseStage(stages)
-	assert.NotContains(t, stages, plan.GetStage(plan.ReleaseStage))
+	assert.NotContains(t, stages, engine.GetStage(engine.ReleaseStage))
 }
 
 func TestRunCmdFromPlanIntegration(t *testing.T) {
@@ -64,7 +64,7 @@ func TestRunCmdFromPlanIntegration(t *testing.T) {
 		Plan:   f.Name(),
 		Source: filepath.Join(d),
 		Stages: []string{
-			plan.GetStage(plan.FeedbackStage),
+			engine.GetStage(engine.FeedbackStage),
 		},
 	}); err != nil {
 		t.Fatal(err)
@@ -80,7 +80,7 @@ func TestRunCmdFromSourceIntegration(t *testing.T) {
 	if err := RunCmd(&RunCmdOptions{
 		Source: filepath.Join(d),
 		Stages: []string{
-			plan.GetStage(plan.FeedbackStage),
+			engine.GetStage(engine.FeedbackStage),
 		},
 	}); err != nil {
 		t.Fatal(err)

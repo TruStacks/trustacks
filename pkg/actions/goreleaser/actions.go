@@ -6,15 +6,16 @@ import (
 	"dagger.io/dagger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
-var goreleaserRelease = &plan.Action{
-	Name:   "goreleaserRelease",
-	Image:  func(_ *plan.Config) string { return "golang" },
-	Stage:  plan.ReleaseStage,
-	Caches: []string{"/go/pkg/mod"},
-	Script: func(container *dagger.Container, inputs map[string]interface{}, _ *plan.ActionUtilities) error {
+var goreleaserRelease = &engine.Action{
+	Name:        "goreleaserRelease",
+	DisplayName: "Goreleaser Release",
+	Description: "Release the golang application with goreleaser.",
+	Image:       func(_ *engine.Config) string { return "golang" },
+	Stage:       engine.ReleaseStage,
+	Caches:      []string{"/go/pkg/mod"},
+	Script: func(container *dagger.Container, inputs map[string]interface{}, _ *engine.ActionUtilities) error {
 		args := struct {
 			GITHUB_TOKEN string
 		}{}
@@ -27,18 +28,12 @@ var goreleaserRelease = &plan.Action{
 		_, err := container.Stdout(context.Background())
 		return err
 	},
+	Inputs: []engine.InputField{
+		engine.GithubToken,
+	},
+	AdmissionCriteria: []engine.Fact{GoreleaserConfigExistsFact},
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        goreleaserRelease.Name,
-			DisplayName: "Goreleaser Release",
-			Description: "Release the golang application with goreleaser.",
-		},
-		[]engine.Fact{GoreleaserConfigExistsFact},
-		nil,
-		[]string{string(plan.GithubToken)},
-	)
-	plan.RegisterAction(goreleaserRelease)
+	engine.RegisterAction(goreleaserRelease)
 }

@@ -8,36 +8,35 @@ import (
 	"dagger.io/dagger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
-var containerBuildAction = &plan.Action{
-	Name:  "containerBuild",
-	Image: func(_ *plan.Config) string { return "busybox" },
-	Stage: plan.OnDemandStage,
-	OutputArtifacts: []plan.Artifact{
-		plan.ContainerImageArtifact,
+var containerBuildAction = &engine.Action{
+	Name:        "containerBuild",
+	DisplayName: "Container Build",
+	Description: "Build a container image from the source Containerfile or Dockerfile.",
+	Image:       func(_ *engine.Config) string { return "busybox" },
+	Stage:       engine.OnDemandStage,
+	OutputArtifacts: []engine.Artifact{
+		engine.ContainerImageArtifact,
 	},
-	Script: func(container *dagger.Container, _ map[string]interface{}, utils *plan.ActionUtilities) error {
+	Script: func(container *dagger.Container, _ map[string]interface{}, utils *engine.ActionUtilities) error {
 		container = container.Directory("/src").DockerBuild()
-		return utils.ExportContainer(container, plan.ContainerImageArtifact)
+		return utils.ExportContainer(container, engine.ContainerImageArtifact)
 	},
+	AdmissionCriteria: []engine.Fact{ContainerfileHasNoDependenciesFact},
 }
 
-var containerCopyAction = &plan.Action{
-	Name:  "containerCopy",
-	Image: func(_ *plan.Config) string { return "alpine" },
-	Stage: plan.PackageStage,
-	Inputs: []string{
-		string(plan.ContainerRegistry),
-		string(plan.ContainerRegistryUsername),
-		string(plan.ContainerRegistryPassword),
+var containerCopyAction = &engine.Action{
+	Name:        "containerCopy",
+	DisplayName: "Container Publish",
+	Description: "Publish the container to a container registry.",
+	Image:       func(_ *engine.Config) string { return "alpine" },
+	Stage:       engine.PackageStage,
+	InputArtifacts: []engine.Artifact{
+		engine.ContainerImageArtifact,
+		engine.SemanticVersionArtifact,
 	},
-	InputArtifacts: []plan.Artifact{
-		plan.ContainerImageArtifact,
-		plan.SemanticVersionArtifact,
-	},
-	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *plan.ActionUtilities) error {
+	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *engine.ActionUtilities) error {
 		args := struct {
 			CONTAINER_REGISTRY          string
 			CONTAINER_REGISTRY_USERNAME string
@@ -46,13 +45,13 @@ var containerCopyAction = &plan.Action{
 		if err := mapstructure.Decode(inputs, &args); err != nil {
 			return err
 		}
-		container, imageMount, err := utils.MountImage(container, plan.ContainerImageArtifact)
+		container, imageMount, err := utils.MountImage(container, engine.ContainerImageArtifact)
 		if err != nil {
 			return err
 		}
 		version := utils.GetConfig().Common.Version
 		if version == "" {
-			container, versionMount, err := utils.Mount(container, plan.SemanticVersionArtifact)
+			container, versionMount, err := utils.Mount(container, engine.SemanticVersionArtifact)
 			if err != nil {
 				return err
 			}
@@ -69,29 +68,15 @@ var containerCopyAction = &plan.Action{
 		}
 		return err
 	},
+	Inputs: []engine.InputField{
+		engine.ContainerRegistry,
+		engine.ContainerRegistryUsername,
+		engine.ContainerRegistryPassword,
+	},
+	AdmissionCriteria: []engine.Fact{ContainerfileHasNoDependenciesFact},
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        containerBuildAction.Name,
-			DisplayName: "Container Build",
-			Description: "Build a container image from the source Containerfile or Dockerfile.",
-		},
-		[]engine.Fact{ContainerfileHasNoDependenciesFact},
-		nil,
-		nil,
-	)
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        containerCopyAction.Name,
-			DisplayName: "Container Publish",
-			Description: "Publish the container to a container registry.",
-		},
-		[]engine.Fact{ContainerfileExistFact},
-		nil,
-		containerCopyAction.Inputs,
-	)
-	plan.RegisterAction(containerBuildAction)
-	plan.RegisterAction(containerCopyAction)
+	engine.RegisterAction(containerBuildAction)
+	engine.RegisterAction(containerCopyAction)
 }

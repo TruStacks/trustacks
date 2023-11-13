@@ -39,7 +39,7 @@ var ArgoCDApplicationExistsRule engine.Rule = func(source string, collector engi
 		}
 		if err := yaml.Unmarshal(contents, &app); err != nil {
 			if !re.Match(contents) {
-				return fact, err
+				return fact, nil
 			}
 		}
 		if app.APIVersion == "argoproj.io/v1alpha1" && app.Kind == "Application" {

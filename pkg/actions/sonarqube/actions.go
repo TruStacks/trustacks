@@ -6,14 +6,15 @@ import (
 	"dagger.io/dagger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
-var sonarScannerCLIScan = &plan.Action{
-	Name:  "sonarScannerCLIScan",
-	Image: func(_ *plan.Config) string { return "sonarsource/sonar-scanner-cli" },
-	Stage: plan.FeedbackStage,
-	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *plan.ActionUtilities) error {
+var sonarScannerCLIScan = &engine.Action{
+	Name:        "sonarScannerCLIScan",
+	DisplayName: "SonarQube Scan",
+	Description: "Scan the source with the sonar scanner cli.",
+	Image:       func(_ *engine.Config) string { return "sonarsource/sonar-scanner-cli" },
+	Stage:       engine.FeedbackStage,
+	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *engine.ActionUtilities) error {
 		args := struct {
 			SONARQUBE_TOKEN string
 		}{}
@@ -25,20 +26,12 @@ var sonarScannerCLIScan = &plan.Action{
 			Stdout(context.Background())
 		return err
 	},
+	Inputs: []engine.InputField{
+		engine.SonarqubeToken,
+	},
+	AdmissionCriteria: []engine.Fact{SonarProjectPropertiesExists},
 }
 
 func init() {
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        sonarScannerCLIScan.Name,
-			DisplayName: "SonarQube Scan",
-			Description: "Scan the source with the sonar scanner cli.",
-		},
-		[]engine.Fact{SonarProjectPropertiesExists},
-		nil,
-		[]string{
-			string(plan.SonarqubeToken),
-		},
-	)
-	plan.RegisterAction(sonarScannerCLIScan)
+	engine.RegisterAction(sonarScannerCLIScan)
 }

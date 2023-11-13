@@ -7,13 +7,12 @@ import (
 	"dagger.io/dagger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 	"gopkg.in/yaml.v2"
 )
 
 // extraOptions returns optional global command options dependent on
 // parameters in the declarative configuration.
-func extraGlobalOptions(config *plan.Config) []string {
+func extraGlobalOptions(config *engine.Config) []string {
 	args := []string{}
 	if config.ArgoCD.Insecure {
 		args = append(args, "--insecure")
@@ -47,13 +46,13 @@ func getArgoApplicationInfo(container *dagger.Container) (string, string, error)
 
 // argocdSync is an action that creates and syncs an argo cd
 // application to a kubernetes cluster.
-var argocdSync = &plan.Action{
+var argocdSync = &engine.Action{
 	Name:        "argocdSync",
 	DisplayName: "ArgoCD Sync",
 	Description: "Sync the ArgoCD application with the source repo.",
-	Image:       func(_ *plan.Config) string { return "argoproj/argocd" },
-	Stage:       plan.PreleaseStage,
-	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *plan.ActionUtilities) error {
+	Image:       func(_ *engine.Config) string { return "argoproj/argocd" },
+	Stage:       engine.PreleaseStage,
+	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *engine.ActionUtilities) error {
 		var err error
 		args := struct {
 			ARGOCD_SERVER     string
@@ -73,28 +72,32 @@ var argocdSync = &plan.Action{
 		_, err = container.WithExec(append([]string{"argocd", "app", "sync", appName}, extraOpts...)).Stdout(context.Background())
 		return err
 	},
-	Inputs: []string{
-		string(plan.ArgoCDServer),
-		string(plan.ArgoCDAuthToken),
+	Inputs: []engine.InputField{
+		engine.ArgoCDServer,
+		engine.ArgoCDAuthToken,
 	},
+	AdmissionCriteria: []engine.Fact{ArgoCDApplicationExistsFact},
 }
 
 func init() {
 	engine.RegisterPatternMatches([]engine.PatternMatch{
-		{Kind: engine.FilePatternMatch, Pattern: ".*.yaml"},
+		{
+			Kind:    engine.FilePatternMatch,
+			Pattern: ".*.yaml",
+		},
 	})
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        argocdSync.Name,
-			DisplayName: "ArgoCD Sync",
-			Description: "Sync the ArgoCD application with the source repo.",
-		},
-		[]engine.Fact{ArgoCDApplicationExistsFact},
-		nil,
-		[]string{
-			string(plan.ArgoCDServer),
-			string(plan.ArgoCDAuthToken),
-		},
-	)
-	plan.RegisterAction(argocdSync)
+	// engine.RegisterAdmissionResolver(
+	// 	engine.ActionSpec{
+	// 		Name:        argocdSync.Name,
+	// 		DisplayName: "ArgoCD Sync",
+	// 		Description: "Sync the ArgoCD application with the source repo.",
+	// 	},
+	// 	[]engine.Fact{ArgoCDApplicationExistsFact},
+	// 	nil,
+	// 	[]string{
+	// 		string(engine.ArgoCDServer),
+	// 		string(engine.ArgoCDAuthToken),
+	// 	},
+	// )
+	engine.RegisterAction(argocdSync)
 }

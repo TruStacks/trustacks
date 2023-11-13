@@ -6,15 +6,16 @@ import (
 
 	"dagger.io/dagger"
 	"github.com/trustacks/trustacks/pkg/engine"
-	"github.com/trustacks/trustacks/pkg/plan"
 )
 
-var npmTestAction = &plan.Action{
-	Name:   "npmTest",
-	Image:  func(_ *plan.Config) string { return "node:alpine" },
-	Stage:  plan.FeedbackStage,
-	Caches: []string{"/src/node_modules"},
-	Script: func(container *dagger.Container, _ map[string]interface{}, _ *plan.ActionUtilities) error {
+var npmTestAction = &engine.Action{
+	Name:        "npmTest",
+	DisplayName: "Npm Test",
+	Description: "Run the test suite with npm test.",
+	Image:       func(_ *engine.Config) string { return "node:alpine" },
+	Stage:       engine.FeedbackStage,
+	Caches:      []string{"/src/node_modules"},
+	Script: func(container *dagger.Container, _ map[string]interface{}, _ *engine.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "bash"})
 		container = container.WithExec([]string{"npm", "install"})
 		container = container.WithEnvVariable("CI", "true")
@@ -22,22 +23,26 @@ var npmTestAction = &plan.Action{
 		_, err := container.Stdout(context.Background())
 		return err
 	},
+	AdmissionCriteria: []engine.Fact{NpmTestExistsFact},
 }
 
-var npmBuildAction = &plan.Action{
-	Name:   "npmBuild",
-	Image:  func(_ *plan.Config) string { return "node:alpine" },
-	Stage:  plan.OnDemandStage,
-	Caches: []string{"/src/node_modules"},
-	OutputArtifacts: []plan.Artifact{
-		plan.ApplicationDistArtifact,
+var npmBuildAction = &engine.Action{
+	Name:        "npmBuild",
+	DisplayName: "Npm Build",
+	Description: "Build the application with npm run build.",
+	Image:       func(_ *engine.Config) string { return "node:alpine" },
+	Stage:       engine.OnDemandStage,
+	Caches:      []string{"/src/node_modules"},
+	OutputArtifacts: []engine.Artifact{
+		engine.ApplicationDistArtifact,
 	},
-	Script: func(container *dagger.Container, _ map[string]interface{}, utils *plan.ActionUtilities) error {
+	Script: func(container *dagger.Container, _ map[string]interface{}, utils *engine.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "bash"})
 		container = container.WithExec([]string{"npm", "install"})
 		container = container.WithExec([]string{"npm", "run", "build"})
-		return utils.Export(container, plan.ApplicationDistArtifact, filepath.Join("/src", "build"))
+		return utils.Export(container, engine.ApplicationDistArtifact, filepath.Join("/src", "build"))
 	},
+	AdmissionCriteria: []engine.Fact{NpmBuildExistsFact},
 }
 
 func init() {
@@ -47,27 +52,6 @@ func init() {
 		{Kind: engine.FilePatternMatch, Pattern: ".*.test.ts"},
 		{Kind: engine.FilePatternMatch, Pattern: ".*.test.tsx"},
 	})
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        npmTestAction.Name,
-			DisplayName: "Npm Test",
-			Description: "Run the test suite with npm test.",
-		},
-		[]engine.Fact{NpmTestExistsFact},
-		nil,
-		nil,
-	)
-	plan.RegisterAction(npmTestAction)
-
-	engine.RegisterAdmissionResolver(
-		plan.ActionSpec{
-			Name:        npmBuildAction.Name,
-			DisplayName: "Npm Build",
-			Description: "Build the application with npm run build.",
-		},
-		[]engine.Fact{NpmBuildExistsFact},
-		nil,
-		nil,
-	)
-	plan.RegisterAction(npmBuildAction)
+	engine.RegisterAction(npmTestAction)
+	engine.RegisterAction(npmBuildAction)
 }
