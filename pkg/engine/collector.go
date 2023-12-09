@@ -9,7 +9,7 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 )
 
-var collector *SourceCollector = newSourceCollector()
+var collector = newSourceCollector()
 
 type Collector interface {
 	Search(string) []string
@@ -44,7 +44,7 @@ func (collector *SourceCollector) addPatternExclusions(patterns []string) {
 }
 
 func (collector *SourceCollector) run(source string) error {
-	if err := filepath.WalkDir(source, func(path string, info fs.DirEntry, err error) error {
+	return filepath.WalkDir(source, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -71,10 +71,7 @@ func (collector *SourceCollector) run(source string) error {
 			}
 		}
 		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func newSourceCollector() *SourceCollector {

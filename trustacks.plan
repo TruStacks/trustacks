@@ -1,0 +1,1 @@
+{"actions":["containerPublish","trivyImage","golangIntegrationTest","containerBuild","golangBuild","golangTest","golangCILintRun","sonarScannerCLIScan"]}

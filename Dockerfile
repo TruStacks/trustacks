@@ -1,13 +1,10 @@
-FROM golang:1.20 AS builder
-ARG version=0.1.0
-COPY . /usr/src/app
-WORKDIR /usr/src/app
-RUN CGO_ENABLED=0 go build -o tsctl -ldflags="-X 'main.version=${version}'" ./cmd
-
 FROM quay.io/containers/podman
-COPY --from=builder /usr/src/app/tsctl /usr/local/bin/tsctl
 
-RUN chmod +x /usr/local/bin/tsctl
+COPY .build /tmp/build
+
+RUN mv /tmp/build/tsctl /usr/local/bin/tsctl && \
+    chmod +x /usr/local/bin/tsctl && \
+    rm -rf /tmp/build
 
 RUN ssh-keyscan github.com >> /tmp/known_hosts && \
     ssh-keyscan gitlab.com >> /tmp/known_hosts && \

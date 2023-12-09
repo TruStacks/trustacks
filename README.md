@@ -2,13 +2,7 @@
 
 ## What is TruStacks?
 
-TruStacks is a generative software delivery engine that removes the need to build pipelines.
-
-#### Generative Sofware Delivery
-
-*Intermediary Wiring* is the pipeline code that sits between the source and the delivered product that is typically implemented with yaml or other no-code DSL's.
-
-TruStacks uses a rule engine to generate actions plans that contain actions based on discovered facts in the application sources.
+TruStacks is a software delivery engine that builds declarative pipelines from application source code.
 
 ## Docs
 

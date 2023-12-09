@@ -1,0 +1,18 @@
+{
+  "CONTAINER_REGISTRY": {
+    "type": "String",
+    "description": "The fully qualified URL of the container registry that will be used for both authentiation and as the destination where application container images will be be pushed."
+  },
+  "CONTAINER_REGISTRY_PASSWORD": {
+    "type": "String",
+    "description": "The container registry password."
+  },
+  "CONTAINER_REGISTRY_USERNAME": {
+    "type": "String",
+    "description": "The container registry username."
+  },
+  "SONARQUBE_TOKEN": {
+    "type": "String",
+    "description": "The sonarqube access token."
+  }
+}
