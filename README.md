@@ -6,7 +6,7 @@ TruStacks is a software delivery engine that builds declarative pipelines from a
 
 ## Docs
 
-View the docs [here](docs.trustacks.io)
+View the docs at [docs.trustacks.io](https://docs.trustacks.io).
 
 ### Contributing
 
