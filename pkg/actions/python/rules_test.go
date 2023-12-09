@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:dupl
 func TestPyProjectTomlExistsRule(t *testing.T) {
 	t.Run("PyProjectTomlExistsFact is true", func(t *testing.T) {
 		d, err := os.MkdirTemp("", "test-src")
@@ -39,6 +40,7 @@ func TestPyProjectTomlExistsRule(t *testing.T) {
 	})
 }
 
+//nolint:dupl
 func TestPipRequirementsExistsRule(t *testing.T) {
 	t.Run("PipRequirementsExistsFact is true", func(t *testing.T) {
 		d, err := os.MkdirTemp("", "test-src")

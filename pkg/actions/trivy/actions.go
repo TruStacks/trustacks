@@ -12,7 +12,7 @@ var trivyImageAction = &engine.Action{
 	DisplayName: "Trivy Scan",
 	Description: "Scan the container image with the trivy security scanner.",
 	Image:       func(_ *engine.Config) string { return "aquasec/trivy" },
-	Stage:       engine.FeedbackStage,
+	Stage:       engine.NonFunctionalStage,
 	Caches:      []string{"/src/node_modules"},
 	InputArtifacts: []engine.Artifact{
 		engine.ContainerImageArtifact,
@@ -23,7 +23,7 @@ var trivyImageAction = &engine.Action{
 			return err
 		}
 		container = container.WithExec([]string{"image", "--input", imageMount.Path("image.tar")})
-		_, err = container.Stdout(context.Background())
+		_, err = container.Sync(context.Background())
 		return err
 	},
 	AdmissionCriteria: []engine.Fact{TrivyConfigExistsFact},

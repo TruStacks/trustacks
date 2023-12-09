@@ -17,7 +17,7 @@ var goreleaserRelease = &engine.Action{
 	Caches:      []string{"/go/pkg/mod"},
 	Script: func(container *dagger.Container, inputs map[string]interface{}, _ *engine.ActionUtilities) error {
 		args := struct {
-			GITHUB_TOKEN string
+			GITHUB_TOKEN string //nolint:revive,stylecheck
 		}{}
 		if err := mapstructure.Decode(inputs, &args); err != nil {
 			return err
@@ -25,7 +25,7 @@ var goreleaserRelease = &engine.Action{
 		container = container.WithExec([]string{"/bin/sh", "-c", "echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list"})
 		container = container.WithExec([]string{"apt", "update"})
 		container = container.WithExec([]string{"apt", "install", "git", "goreleaser"})
-		_, err := container.Stdout(context.Background())
+		_, err := container.Sync(context.Background())
 		return err
 	},
 	Inputs: []engine.InputField{

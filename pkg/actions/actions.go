@@ -1,6 +1,7 @@
 package actions
 
 import (
+	// import actions
 	_ "github.com/trustacks/trustacks/pkg/actions/argocd"
 	_ "github.com/trustacks/trustacks/pkg/actions/container"
 	_ "github.com/trustacks/trustacks/pkg/actions/eslint"
@@ -13,4 +14,5 @@ import (
 	_ "github.com/trustacks/trustacks/pkg/actions/python"
 	_ "github.com/trustacks/trustacks/pkg/actions/sonarqube"
 	_ "github.com/trustacks/trustacks/pkg/actions/tox"
+	_ "github.com/trustacks/trustacks/pkg/actions/trivy"
 )

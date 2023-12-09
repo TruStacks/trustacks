@@ -36,8 +36,8 @@ func makeTestdata(t *testing.T) (string, func()) {
 
 func TestRemoveReleaseStages(t *testing.T) {
 	stages := []string{
-		engine.GetStage(engine.FeedbackStage),
-		engine.GetStage(engine.PreleaseStage),
+		engine.GetStage(engine.CommitStage),
+		engine.GetStage(engine.DeployStage),
 		engine.GetStage(engine.ReleaseStage),
 	}
 	assert.Contains(t, stages, engine.GetStage(engine.ReleaseStage))
@@ -46,8 +46,8 @@ func TestRemoveReleaseStages(t *testing.T) {
 }
 
 func TestRunCmdFromPlanIntegration(t *testing.T) {
-	d, close := makeTestdata(t)
-	defer close()
+	d, clean := makeTestdata(t)
+	defer clean()
 	f, err := os.CreateTemp("", "test")
 	if err != nil {
 		t.Fatal(err)
@@ -62,9 +62,9 @@ func TestRunCmdFromPlanIntegration(t *testing.T) {
 	}
 	if err := RunCmd(&RunCmdOptions{
 		Plan:   f.Name(),
-		Source: filepath.Join(d),
+		Source: d,
 		Stages: []string{
-			engine.GetStage(engine.FeedbackStage),
+			engine.GetStage(engine.CommitStage),
 		},
 	}); err != nil {
 		t.Fatal(err)
@@ -72,15 +72,15 @@ func TestRunCmdFromPlanIntegration(t *testing.T) {
 }
 
 func TestRunCmdFromSourceIntegration(t *testing.T) {
-	d, close := makeTestdata(t)
-	defer close()
+	d, clean := makeTestdata(t)
+	defer clean()
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
 	if err := RunCmd(&RunCmdOptions{
-		Source: filepath.Join(d),
+		Source: d,
 		Stages: []string{
-			engine.GetStage(engine.FeedbackStage),
+			engine.GetStage(engine.CommitStage),
 		},
 	}); err != nil {
 		t.Fatal(err)

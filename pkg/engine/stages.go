@@ -3,18 +3,20 @@ package engine
 type Stage int
 
 const (
-	OnDemandStage Stage = iota
-	FeedbackStage
-	PackageStage
-	PreleaseStage
+	OnDemand Stage = iota
+	CommitStage
+	AcceptanceStage
+	NonFunctionalStage
+	DeployStage
 	ReleaseStage
 )
 
 var actionStages = []string{
 	"", // DO NOT DELETE!
-	"feedback",
-	"package",
-	"prerelease",
+	"commit",
+	"acceptance",
+	"nonfunctional",
+	"deploy",
 	"release",
 }
 

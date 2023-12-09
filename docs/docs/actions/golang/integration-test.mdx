@@ -1,0 +1,24 @@
+---
+title: Integration Test
+hide_title: true
+slug: /actions/golang/integraiont-test
+---
+
+import golangIcon from "../../assets/golang.png"
+
+<img style={{height:'75px', margin: '20px 0 20px 0'}} src={golangIcon} />
+
+# Golang - Integration Test
+
+The integration test action runs the integration test suite using `go test -run Integration`. 
+
+:::info IMPORTANT!
+Integration tests must contain the "Integration" suffix in order to be included.
+
+example:
+```
+func TestSomethingIntegration(t *testing.T) {
+    ...
+}
+```
+:::

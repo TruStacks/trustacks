@@ -10,45 +10,45 @@ import (
 )
 
 var (
-	// PackageJsonExistsFact is true if the package.json file exists
+	// PackageJSONExistsFact is true if the package.json file exists
 	// in the root of the application source.
-	PackageJsonExistsFact = engine.NewFact()
-	// PackageJsonVersionExistsFact is true if the package.json file
+	PackageJSONExistsFact = engine.NewFact()
+	// PackageJSONVersionExistsFact is true if the package.json file
 	// contains the version key.
-	PackageJsonVersionExistsFact = engine.NewFact()
+	PackageJSONVersionExistsFact = engine.NewFact()
 )
 
-// PackageJsonExistsRule checks if the package.json file exits in the
+// PackageJSONExistsRule checks if the package.json file exits in the
 // root of the filesystem.
-var PackageJsonExistsRule engine.Rule = func(source string, _ engine.Collector, _ mapset.Set[engine.Fact]) (engine.Fact, error) {
+var PackageJSONExistsRule engine.Rule = func(source string, _ engine.Collector, _ mapset.Set[engine.Fact]) (engine.Fact, error) {
 	var fact = engine.NilFact
 	if _, err := os.Stat(filepath.Join(source, "package.json")); os.IsNotExist(err) {
 		return fact, nil
 	} else if err != nil {
 		return fact, err
 	}
-	fact = PackageJsonExistsFact
+	fact = PackageJSONExistsFact
 	return fact, nil
 }
 
-// PackageJsonVersionExistsRule checks that the version key exist in
+// PackageJSONVersionExistsRule checks that the version key exist in
 // the package.json configuration file.
-var PackageJsonVersionExistsRule engine.Rule = func(source string, _ engine.Collector, _ mapset.Set[engine.Fact]) (engine.Fact, error) {
+var PackageJSONVersionExistsRule engine.Rule = func(source string, _ engine.Collector, _ mapset.Set[engine.Fact]) (engine.Fact, error) {
 	var fact = engine.NilFact
-	var packageJson map[string]interface{}
+	var packageJSON map[string]interface{}
 	data, err := os.ReadFile(filepath.Join(source, "package.json"))
 	if err != nil {
 		return fact, err
 	}
-	if err := json.Unmarshal(data, &packageJson); err != nil {
+	if err := json.Unmarshal(data, &packageJSON); err != nil {
 		return fact, err
 	}
-	if _, ok := packageJson["version"]; ok {
-		fact = PackageJsonVersionExistsFact
+	if _, ok := packageJSON["version"]; ok {
+		fact = PackageJSONVersionExistsFact
 	}
 	return fact, nil
 }
 
 func init() {
-	engine.AddToRuleset(&PackageJsonExistsRule, &PackageJsonVersionExistsRule)
+	engine.AddToRuleset(&PackageJSONExistsRule, &PackageJSONVersionExistsRule)
 }

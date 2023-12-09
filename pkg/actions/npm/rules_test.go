@@ -12,7 +12,7 @@ type npmTestCollector struct {
 	results []string
 }
 
-func (c npmTestCollector) Search(pattern string) []string {
+func (c npmTestCollector) Search(_ string) []string {
 	return c.results
 }
 

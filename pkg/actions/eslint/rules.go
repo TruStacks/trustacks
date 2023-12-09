@@ -44,15 +44,15 @@ var ESLintConfigExistsRule engine.Rule = func(source string, _ engine.Collector,
 	if eslintConfig != "" && eslintConfig != "package.json" {
 		fact = ESLintConfigExistsFact
 	} else {
-		var packageJson map[string]interface{}
+		var packageJSON map[string]interface{}
 		data, err := os.ReadFile(filepath.Join(source, "package.json"))
 		if err != nil {
 			return fact, err
 		}
-		if err := json.Unmarshal(data, &packageJson); err != nil {
+		if err := json.Unmarshal(data, &packageJSON); err != nil {
 			return fact, err
 		}
-		if _, ok := packageJson["eslintConfig"]; ok {
+		if _, ok := packageJSON["eslintConfig"]; ok {
 			fact = ESLintConfigExistsFact
 		}
 	}
@@ -60,5 +60,5 @@ var ESLintConfigExistsRule engine.Rule = func(source string, _ engine.Collector,
 }
 
 func init() {
-	engine.AddToRuleset(&javascript.PackageJsonExistsRule, &ESLintConfigExistsRule)
+	engine.AddToRuleset(&javascript.PackageJSONExistsRule, &ESLintConfigExistsRule)
 }

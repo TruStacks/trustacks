@@ -26,4 +26,5 @@ var TrivyConfigExistsRule engine.Rule = func(source string, collector engine.Col
 
 func init() {
 	engine.AddToRuleset(&container.ContainerfileHasNoDependenciesRule, &TrivyConfigExistsRule)
+	engine.AddToRuleset(&container.ContainerfileHasBuildCopyRule, &TrivyConfigExistsRule)
 }

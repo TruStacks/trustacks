@@ -2,8 +2,6 @@ package argocd
 
 import (
 	"context"
-	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -45,12 +43,12 @@ spec:
     namespace: test-argo-app
     name: test
 `
-	if err := ioutil.WriteFile(filepath.Join(src, "application.yaml"), []byte(applicationYaml), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(src, "application.yaml"), []byte(applicationYaml), 0644); err != nil {
 		t.Fatal(err)
 	}
 	client, err := dagger.Connect(context.Background(), dagger.WithLogOutput(os.Stdout))
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 	container := client.Container().
 		From("argoproj/argocd").

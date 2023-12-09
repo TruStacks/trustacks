@@ -37,7 +37,7 @@ func getArgoApplicationInfo(container *dagger.Container) (string, string, error)
 	if err != nil {
 		return "", "", err
 	}
-	var spec ArgoCDApplicationSpec
+	var spec ApplicationSpec
 	if err := yaml.Unmarshal([]byte(stdout), &spec); err != nil {
 		return "", "", err
 	}
@@ -48,15 +48,15 @@ func getArgoApplicationInfo(container *dagger.Container) (string, string, error)
 // application to a kubernetes cluster.
 var argocdSync = &engine.Action{
 	Name:        "argocdSync",
-	DisplayName: "ArgoCD Sync",
-	Description: "Sync the ArgoCD application with the source repo.",
+	DisplayName: "Argo CD Sync",
+	Description: "Sync the Argo CD application with the source repo.",
 	Image:       func(_ *engine.Config) string { return "argoproj/argocd" },
-	Stage:       engine.PreleaseStage,
+	Stage:       engine.ReleaseStage,
 	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *engine.ActionUtilities) error {
 		var err error
 		args := struct {
-			ARGOCD_SERVER     string
-			ARGOCD_AUTH_TOKEN string
+			ARGOCD_SERVER     string //nolint:revive,stylecheck
+			ARGOCD_AUTH_TOKEN string //nolint:revive,stylecheck
 		}{}
 		if err := mapstructure.Decode(inputs, &args); err != nil {
 			return err
@@ -69,7 +69,7 @@ var argocdSync = &engine.Action{
 		container = container.WithSecretVariable("ARGOCD_AUTH_TOKEN", utils.SetSecret("argocdAuthToken", args.ARGOCD_AUTH_TOKEN))
 		container = container.WithEnvVariable("ARGOCD_SERVER", args.ARGOCD_SERVER)
 		container = container.WithExec(append([]string{"argocd", "app", "create", "-f", appSpecPath, "--upsert"}, extraOpts...))
-		_, err = container.WithExec(append([]string{"argocd", "app", "sync", appName}, extraOpts...)).Stdout(context.Background())
+		_, err = container.WithExec(append([]string{"argocd", "app", "sync", appName}, extraOpts...)).Sync(context.Background())
 		return err
 	},
 	Inputs: []engine.InputField{
@@ -86,18 +86,5 @@ func init() {
 			Pattern: ".*.yaml",
 		},
 	})
-	// engine.RegisterAdmissionResolver(
-	// 	engine.ActionSpec{
-	// 		Name:        argocdSync.Name,
-	// 		DisplayName: "ArgoCD Sync",
-	// 		Description: "Sync the ArgoCD application with the source repo.",
-	// 	},
-	// 	[]engine.Fact{ArgoCDApplicationExistsFact},
-	// 	nil,
-	// 	[]string{
-	// 		string(engine.ArgoCDServer),
-	// 		string(engine.ArgoCDAuthToken),
-	// 	},
-	// )
 	engine.RegisterAction(argocdSync)
 }

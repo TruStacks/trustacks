@@ -12,9 +12,9 @@ func TestSchedulerAssignActivityStage(t *testing.T) {
 		registeredActions = map[string]*Action{}
 	}()
 	var mockArtifact Artifact = 1
-	actionA := &Action{Name: "actionA", Stage: OnDemandStage, OutputArtifacts: []Artifact{mockArtifact}}
-	actionB := &Action{Name: "actionB", Stage: FeedbackStage}
-	actionC := &Action{Name: "actionC", Stage: PreleaseStage, InputArtifacts: []Artifact{mockArtifact}}
+	actionA := &Action{Name: "actionA", Stage: OnDemand, OutputArtifacts: []Artifact{mockArtifact}}
+	actionB := &Action{Name: "actionB", Stage: CommitStage}
+	actionC := &Action{Name: "actionC", Stage: DeployStage, InputArtifacts: []Artifact{mockArtifact}}
 	registeredActions = map[string]*Action{
 		"actionA": actionA,
 		"actionB": actionB,
@@ -22,90 +22,100 @@ func TestSchedulerAssignActivityStage(t *testing.T) {
 	}
 	s := newScheduler()
 	assignments := s.assignActivityStage([]string{"actionA", "actionB", "actionC"})
-	assert.True(t, assignments[OnDemandStage].Contains(actionA))
-	assert.True(t, assignments[FeedbackStage].Contains(actionB))
-	assert.True(t, assignments[PreleaseStage].Contains(actionC))
+	assert.True(t, assignments[OnDemand].Contains(actionA))
+	assert.True(t, assignments[CommitStage].Contains(actionB))
+	assert.True(t, assignments[DeployStage].Contains(actionC))
 }
 
 func TestBindActionInputs(t *testing.T) {
 	var mockArtifact Artifact = 1
 	assignments := map[Stage]mapset.Set[*Action]{
-		OnDemandStage: mapset.NewSet[*Action](),
-		FeedbackStage: mapset.NewSet[*Action](),
-		PreleaseStage: mapset.NewSet[*Action](),
+		OnDemand:    mapset.NewSet[*Action](),
+		CommitStage: mapset.NewSet[*Action](),
+		DeployStage: mapset.NewSet[*Action](),
 	}
-	assignments[OnDemandStage].Add(&Action{Name: "actionA", Stage: OnDemandStage, OutputArtifacts: []Artifact{mockArtifact}})
-	assignments[FeedbackStage].Add(&Action{Name: "actionB", Stage: FeedbackStage})
-	assignments[PreleaseStage].Add(&Action{Name: "actionC", Stage: PreleaseStage, InputArtifacts: []Artifact{mockArtifact}})
+	assignments[OnDemand].Add(&Action{Name: "actionA", Stage: OnDemand, OutputArtifacts: []Artifact{mockArtifact}})
+	assignments[CommitStage].Add(&Action{Name: "actionB", Stage: CommitStage})
+	assignments[DeployStage].Add(&Action{Name: "actionC", Stage: DeployStage, InputArtifacts: []Artifact{mockArtifact}})
 	s := newScheduler()
 	s.bindActionInputs(assignments)
-	assert.True(t, s.requiredInputs[mockArtifact].Contains(PreleaseStage))
+	assert.True(t, s.requiredInputs[mockArtifact].Contains(DeployStage))
 }
 
 func TestFindOptionalInputOccurances(t *testing.T) {
 	var mockArtifact Artifact = 1
 	assignments := map[Stage]mapset.Set[*Action]{
-		OnDemandStage: mapset.NewSet[*Action](),
-		FeedbackStage: mapset.NewSet[*Action](),
-		PreleaseStage: mapset.NewSet[*Action](),
+		OnDemand:    mapset.NewSet[*Action](),
+		CommitStage: mapset.NewSet[*Action](),
+		DeployStage: mapset.NewSet[*Action](),
 	}
-	assignments[OnDemandStage].Add(&Action{Name: "actionA", Stage: OnDemandStage, OutputArtifacts: []Artifact{mockArtifact}})
-	assignments[FeedbackStage].Add(&Action{Name: "actionB", Stage: FeedbackStage, OptionalInputArtifacts: []Artifact{mockArtifact}})
-	assignments[PreleaseStage].Add(&Action{Name: "actionC", Stage: PreleaseStage, InputArtifacts: []Artifact{mockArtifact}})
+	assignments[OnDemand].Add(&Action{Name: "actionA", Stage: OnDemand, OutputArtifacts: []Artifact{mockArtifact}})
+	assignments[CommitStage].Add(&Action{Name: "actionB", Stage: CommitStage, OptionalInputArtifacts: []Artifact{mockArtifact}})
+	assignments[DeployStage].Add(&Action{Name: "actionC", Stage: DeployStage, InputArtifacts: []Artifact{mockArtifact}})
 	s := newScheduler()
 	s.bindActionInputs(assignments)
-	assert.True(t, s.optionalInputs[mockArtifact].Contains(FeedbackStage))
-	assert.True(t, s.requiredInputs[mockArtifact].Contains(PreleaseStage))
+	assert.True(t, s.optionalInputs[mockArtifact].Contains(CommitStage))
+	assert.True(t, s.requiredInputs[mockArtifact].Contains(DeployStage))
 }
 
-func TestSchedulerAssigneOnDemandActions(t *testing.T) {
+func TestSchedulerAssignOnDemandActions(t *testing.T) {
 	var mockArtifact Artifact = 1
-	actionA := &Action{Name: "actionA", Stage: OnDemandStage, OutputArtifacts: []Artifact{mockArtifact}}
+	actionA := &Action{Name: "actionA", Stage: OnDemand, OutputArtifacts: []Artifact{mockArtifact}}
 	assignments := map[Stage]mapset.Set[*Action]{
-		OnDemandStage: mapset.NewSet[*Action](),
-		FeedbackStage: mapset.NewSet[*Action](),
+		OnDemand:    mapset.NewSet[*Action](),
+		CommitStage: mapset.NewSet[*Action](),
 	}
-	assignments[OnDemandStage].Add(actionA)
-	assert.True(t, assignments[OnDemandStage].Contains(actionA))
+	assignments[OnDemand].Add(actionA)
+	assert.True(t, assignments[OnDemand].Contains(actionA))
 	s := newScheduler()
-	s.requiredInputs[mockArtifact] = mapset.NewSet[Stage](ReleaseStage, FeedbackStage)
-	if err := s.assignOnDemandActions(assignments); err != nil {
-		t.Fatal(err)
-	}
-	assert.False(t, assignments[OnDemandStage].Contains(actionA))
-	assert.True(t, assignments[FeedbackStage].Contains(actionA))
+	t.Run("requiredInputs", func(t *testing.T) {
+		s.requiredInputs[mockArtifact] = mapset.NewSet[Stage](ReleaseStage, CommitStage)
+		if err := s.assignOnDemandActions(assignments); err != nil {
+			t.Fatal(err)
+		}
+		assert.False(t, assignments[OnDemand].Contains(actionA))
+		assert.True(t, assignments[CommitStage].Contains(actionA))
+	})
+	t.Run("optionalInputs", func(t *testing.T) {
+		s.optionalInputs[mockArtifact] = mapset.NewSet[Stage](ReleaseStage, CommitStage)
+		if err := s.assignOnDemandActions(assignments); err != nil {
+			t.Fatal(err)
+		}
+		assert.False(t, assignments[OnDemand].Contains(actionA))
+		assert.True(t, assignments[CommitStage].Contains(actionA))
+	})
 }
 
 func TestSchedulerSortActions(t *testing.T) {
 	t.Run("resolvableInputs", func(t *testing.T) {
 		var mockArtifactA Artifact = 1
 		var mockArtifactB Artifact = 2
-		actionA := &Action{Name: "actionA", Stage: FeedbackStage, OutputArtifacts: []Artifact{mockArtifactA}}
-		actionB := &Action{Name: "actionB", Stage: FeedbackStage, OutputArtifacts: []Artifact{mockArtifactB}, InputArtifacts: []Artifact{mockArtifactA}}
-		actionC := &Action{Name: "actionC", Stage: FeedbackStage, InputArtifacts: []Artifact{mockArtifactB}}
+		actionA := &Action{Name: "actionA", Stage: CommitStage, OutputArtifacts: []Artifact{mockArtifactA}}
+		actionB := &Action{Name: "actionB", Stage: CommitStage, OutputArtifacts: []Artifact{mockArtifactB}, InputArtifacts: []Artifact{mockArtifactA}}
+		actionC := &Action{Name: "actionC", Stage: CommitStage, InputArtifacts: []Artifact{mockArtifactB}}
 		assignments := map[Stage]mapset.Set[*Action]{
-			FeedbackStage: mapset.NewSet[*Action](actionB, actionC, actionA),
+			CommitStage: mapset.NewSet[*Action](actionB, actionC, actionA),
 		}
 		s := newScheduler()
 		sortedAssignments, err := s.sortActions(assignments)
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.Equal(t, sortedAssignments[FeedbackStage][0], actionA)
-		assert.Equal(t, sortedAssignments[FeedbackStage][1], actionB)
-		assert.Equal(t, sortedAssignments[FeedbackStage][2], actionC)
+		assert.Equal(t, sortedAssignments[CommitStage][0], actionA)
+		assert.Equal(t, sortedAssignments[CommitStage][1], actionB)
+		assert.Equal(t, sortedAssignments[CommitStage][2], actionC)
 	})
 	t.Run("unresolvableInputs", func(t *testing.T) {
 		var mockArtifactA Artifact = 1
 		var mockArtifactB Artifact = 2
-		actionA := &Action{Name: "actionA", Stage: FeedbackStage, OutputArtifacts: []Artifact{mockArtifactA}}
-		actionB := &Action{Name: "actionB", Stage: FeedbackStage, InputArtifacts: []Artifact{mockArtifactB}}
+		actionA := &Action{Name: "actionA", Stage: CommitStage, OutputArtifacts: []Artifact{mockArtifactA}}
+		actionB := &Action{Name: "actionB", Stage: CommitStage, InputArtifacts: []Artifact{mockArtifactB}}
 		assignments := map[Stage]mapset.Set[*Action]{
-			FeedbackStage: mapset.NewSet[*Action](actionB, actionA),
+			CommitStage: mapset.NewSet[*Action](actionB, actionA),
 		}
 		s := newScheduler()
 		_, err := s.sortActions(assignments)
-		assert.ErrorContains(t, err, "the scheduler has detected unresolved inputs for the following actions: 'actionB'")
+		assert.ErrorContains(t, err, "the following action has inputs that cannot be resolved: 'actionB'")
 	})
 }
 
@@ -115,10 +125,10 @@ func TestSchedulerSchedule(t *testing.T) {
 	}()
 	var mockArtifactA Artifact = 1
 	var mockArtifactB Artifact = 2
-	actionA := &Action{Name: "actionA", Stage: OnDemandStage, OutputArtifacts: []Artifact{mockArtifactA}}
-	actionB := &Action{Name: "actionB", Stage: OnDemandStage, OutputArtifacts: []Artifact{mockArtifactB}}
-	actionC := &Action{Name: "actionC", Stage: FeedbackStage}
-	actionD := &Action{Name: "actionD", Stage: PreleaseStage, InputArtifacts: []Artifact{mockArtifactA}}
+	actionA := &Action{Name: "actionA", Stage: OnDemand, OutputArtifacts: []Artifact{mockArtifactA}}
+	actionB := &Action{Name: "actionB", Stage: OnDemand, OutputArtifacts: []Artifact{mockArtifactB}}
+	actionC := &Action{Name: "actionC", Stage: CommitStage}
+	actionD := &Action{Name: "actionD", Stage: DeployStage, InputArtifacts: []Artifact{mockArtifactA}}
 	actionE := &Action{Name: "actionE", Stage: ReleaseStage, InputArtifacts: []Artifact{mockArtifactB}}
 	registeredActions = map[string]*Action{
 		"actionA": actionA,
@@ -132,9 +142,9 @@ func TestSchedulerSchedule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, schedule[FeedbackStage][0], actionC)
-	assert.Equal(t, schedule[PreleaseStage][0], actionA)
-	assert.Equal(t, schedule[PreleaseStage][1], actionD)
+	assert.Equal(t, schedule[CommitStage][0], actionC)
+	assert.Equal(t, schedule[DeployStage][0], actionA)
+	assert.Equal(t, schedule[DeployStage][1], actionD)
 	assert.Equal(t, schedule[ReleaseStage][0], actionB)
 	assert.Equal(t, schedule[ReleaseStage][1], actionE)
 }

@@ -2,7 +2,6 @@ package engine
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/pelletier/go-toml"
 )
@@ -21,6 +20,11 @@ type ConfigPython struct {
 	DevRequirements string   `toml:"dev_reqs"`
 }
 
+type ConfigGolang struct {
+	Version string `toml:"version"`
+	LDFlags string `toml:"ldflags"`
+}
+
 type ConfigArgoCD struct {
 	GRPCWeb  bool `toml:"grpcWeb"`
 	Insecure bool `toml:"insecure"`
@@ -29,15 +33,16 @@ type ConfigArgoCD struct {
 type Config struct {
 	Common ConfigCommon `toml:"common"`
 	Python ConfigPython `toml:"python"`
+	Golang ConfigGolang `toml:"golang"`
 	ArgoCD ConfigArgoCD `toml:"argocd"`
 }
 
 func NewConfig() (*Config, error) {
 	var config Config
-	if _, err := os.Stat(filepath.Join(configPath)); os.IsNotExist(err) {
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return &Config{}, nil
 	}
-	data, err := os.ReadFile(filepath.Join(configPath))
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}

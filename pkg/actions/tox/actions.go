@@ -13,7 +13,7 @@ var toxRunAction = &engine.Action{
 	DisplayName: "Tox Run",
 	Description: "Run the python test suite using tox",
 	Image:       func(_ *engine.Config) string { return "python" },
-	Stage:       engine.FeedbackStage,
+	Stage:       engine.CommitStage,
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *engine.ActionUtilities) error {
 		container, err := python.InstallPythonDependencies(container)
 		if err != nil {
@@ -21,7 +21,7 @@ var toxRunAction = &engine.Action{
 		}
 		container = container.WithExec([]string{"pip", "install", "tox"})
 		container = container.WithExec([]string{"tox", "run"})
-		_, err = container.Stdout(context.Background())
+		_, err = container.Sync(context.Background())
 		return err
 
 	},

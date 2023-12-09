@@ -1,0 +1,5 @@
+[common]
+version = "0.3.0"
+
+[golang]
+ldflags = "-X 'main.version=$VERSION'"

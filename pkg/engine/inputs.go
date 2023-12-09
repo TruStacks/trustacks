@@ -56,7 +56,7 @@ func (input ContainerRegistryPasswordInput) Schema() InputFieldSchema {
 	}
 }
 
-const SonarqubeToken InputField = "SONARQUBE_TOKEN"
+const SonarqubeToken InputField = "SONARQUBE_TOKEN" //nolint:gosec
 
 type SonarqubeTokenInput struct{}
 
@@ -78,7 +78,7 @@ func (input ArgoCDServerInput) Schema() InputFieldSchema {
 	}
 }
 
-const ArgoCDAuthToken InputField = "ARGOCD_AUTH_TOKEN"
+const ArgoCDAuthToken InputField = "ARGOCD_AUTH_TOKEN" //nolint:gosec
 
 type ArgoCDAuthTokenInput struct{}
 
@@ -89,7 +89,7 @@ func (input ArgoCDAuthTokenInput) Schema() InputFieldSchema {
 	}
 }
 
-const GithubToken InputField = "GITHUB_TOKEN"
+const GithubToken InputField = "GITHUB_TOKEN" //nolint:gosec
 
 type GithubTokenInput struct{}
 

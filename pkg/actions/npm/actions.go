@@ -13,14 +13,14 @@ var npmTestAction = &engine.Action{
 	DisplayName: "Npm Test",
 	Description: "Run the test suite with npm test.",
 	Image:       func(_ *engine.Config) string { return "node:alpine" },
-	Stage:       engine.FeedbackStage,
+	Stage:       engine.CommitStage,
 	Caches:      []string{"/src/node_modules"},
 	Script: func(container *dagger.Container, _ map[string]interface{}, _ *engine.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "bash"})
 		container = container.WithExec([]string{"npm", "install"})
 		container = container.WithEnvVariable("CI", "true")
 		container = container.WithExec([]string{"npm", "test", "--coverage"})
-		_, err := container.Stdout(context.Background())
+		_, err := container.Sync(context.Background())
 		return err
 	},
 	AdmissionCriteria: []engine.Fact{NpmTestExistsFact},
@@ -31,16 +31,16 @@ var npmBuildAction = &engine.Action{
 	DisplayName: "Npm Build",
 	Description: "Build the application with npm run build.",
 	Image:       func(_ *engine.Config) string { return "node:alpine" },
-	Stage:       engine.OnDemandStage,
+	Stage:       engine.OnDemand,
 	Caches:      []string{"/src/node_modules"},
 	OutputArtifacts: []engine.Artifact{
-		engine.ApplicationDistArtifact,
+		engine.BuildArtifact,
 	},
 	Script: func(container *dagger.Container, _ map[string]interface{}, utils *engine.ActionUtilities) error {
 		container = container.WithExec([]string{"apk", "add", "bash"})
 		container = container.WithExec([]string{"npm", "install"})
 		container = container.WithExec([]string{"npm", "run", "build"})
-		return utils.Export(container, engine.ApplicationDistArtifact, filepath.Join("/src", "build"))
+		return utils.Export(container, engine.BuildArtifact, filepath.Join("/src", "build"))
 	},
 	AdmissionCriteria: []engine.Fact{NpmBuildExistsFact},
 }

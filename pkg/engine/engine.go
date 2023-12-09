@@ -4,14 +4,14 @@ type Engine struct {
 	sourceCollector *SourceCollector
 }
 
-func (engine *Engine) CreateActionPlan(source string, simple bool) (string, error) {
-	actionPlan := NewActionPlan(nil)
+func (engine *Engine) CreateActionPlan(source string) (*ActionPlan, error) {
+	actionPlan := NewActionPlan()
 	if err := engine.runSourceCollector(source); err != nil {
-		return "", err
+		return nil, err
 	}
 	facts, err := ruleset.gatherFacts(source, engine.sourceCollector, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	for _, action := range registeredActions {
 		pass := true
@@ -26,14 +26,10 @@ func (engine *Engine) CreateActionPlan(source string, simple bool) (string, erro
 			}
 		}
 		if pass {
-			actionPlan.AddAction(action.Name, action.Inputs)
+			actionPlan.AddAction(action.Name)
 		}
 	}
-	actionPlanJson, err := actionPlan.ToJson()
-	if err != nil {
-		return "", err
-	}
-	return actionPlanJson, nil
+	return actionPlan, nil
 }
 
 func (engine *Engine) runSourceCollector(source string) error {

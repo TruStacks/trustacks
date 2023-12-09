@@ -12,10 +12,11 @@ import (
 )
 
 type RunCmdOptions struct {
-	Source     string
-	Plan       string
-	Stages     []string
-	Prerelease bool
+	Source              string
+	Plan                string
+	Stages              []string
+	IgnoreMissingInputs bool
+	Prerelease          bool
 }
 
 func removeReleaseStage(stages []string) []string {
@@ -34,19 +35,23 @@ func removeReleaseStage(stages []string) []string {
 func RunCmd(options *RunCmdOptions) error {
 	var planData map[string]interface{}
 	if _, err := os.Stat(options.Plan); os.IsNotExist(err) {
-		spec, err := engine.New().CreateActionPlan(options.Source, false)
+		actionPlan, err := engine.New().CreateActionPlan(options.Source)
 		if err != nil {
 			return fmt.Errorf("failed creating the action plan: %s", err)
+		}
+		spec, err := actionPlan.ToJSON()
+		if err != nil {
+			return err
 		}
 		if err := json.Unmarshal([]byte(spec), &planData); err != nil {
 			return fmt.Errorf("failed unmarshaling the action plan data: %s", err)
 		}
 	} else {
-		planJson, err := os.ReadFile(options.Plan)
+		planJSON, err := os.ReadFile(options.Plan)
 		if err != nil {
 			return fmt.Errorf("failed opening plan file: %s", err)
 		}
-		if err := json.Unmarshal(planJson, &planData); err != nil {
+		if err := json.Unmarshal(planJSON, &planData); err != nil {
 			return fmt.Errorf("failed parsing plan file: %s", err)
 		}
 	}
@@ -54,14 +59,24 @@ func RunCmd(options *RunCmdOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed converting plan file to spec: %s", err)
 	}
-	client, err := dagger.Connect(context.Background(), dagger.WithLogOutput(os.Stdout))
+	clientOpts := []dagger.ClientOpt{}
+	if os.Getenv("VERBOSE") == "true" {
+		clientOpts = append(clientOpts, dagger.WithLogOutput(os.Stdout))
+	}
+	client, err := dagger.Connect(context.Background(), clientOpts...)
 	if err != nil {
 		return fmt.Errorf("failed connecting to the dagger agent")
 	}
 	if options.Prerelease {
 		removeReleaseStage(options.Stages)
 	}
-	if err := engine.Run(options.Source, string(spec), client, options.Stages); err != nil {
+	if err := engine.Run(engine.RunArgs{
+		Source:              options.Source,
+		Spec:                string(spec),
+		Client:              client,
+		Stages:              options.Stages,
+		IgnoreMissingInputs: options.IgnoreMissingInputs,
+	}); err != nil {
 		log.Error("", "err", err)
 		os.Exit(1)
 	}

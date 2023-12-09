@@ -14,13 +14,13 @@ var (
 	ArgoCDApplicationExistsFact = engine.NewFact()
 )
 
-type ArgoCDApplicationSpec struct {
-	APIVersion string                        `yaml:"apiVersion,omitempty"`
-	Kind       string                        `yaml:"kind,omitempty"`
-	Metadata   ArgoCDApplicationSpecMetadata `yaml:"metadata"`
+type ApplicationSpec struct {
+	APIVersion string                  `yaml:"apiVersion,omitempty"`
+	Kind       string                  `yaml:"kind,omitempty"`
+	Metadata   ApplicationSpecMetadata `yaml:"metadata"`
 }
 
-type ArgoCDApplicationSpecMetadata struct {
+type ApplicationSpecMetadata struct {
 	Name string `yaml:"name"`
 }
 
@@ -28,15 +28,12 @@ var ArgoCDApplicationExistsRule engine.Rule = func(source string, collector engi
 	var fact = engine.NilFact
 	matches := collector.Search(".*.yaml")
 	for _, path := range matches {
-		app := &ArgoCDApplicationSpec{}
+		app := &ApplicationSpec{}
 		contents, err := os.ReadFile(path)
 		if err != nil {
 			return fact, err
 		}
-		re, err := regexp.Compile(`: {{ \.Values.*`)
-		if err != nil {
-			return fact, err
-		}
+		re := regexp.MustCompile(`: {{ \.Values.*`)
 		if err := yaml.Unmarshal(contents, &app); err != nil {
 			if !re.Match(contents) {
 				return fact, nil

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/log"
 	mapset "github.com/deckarep/golang-set/v2"
 )
 
@@ -57,61 +56,47 @@ func (s *scheduler) bindActionInputs(assignments map[Stage]mapset.Set[*Action]) 
 func (s *scheduler) assignOnDemandActions(assignments map[Stage]mapset.Set[*Action]) error {
 	unmatchableWatchList := mapset.NewSet[*Action]()
 	for {
-		// if on demand actions are nil or empty then all actions are assigned
-		// or no on demand actions exist in the action plan schedule.
-		if assignments[OnDemandStage] == nil || assignments[OnDemandStage].Cardinality() == 0 {
+		if assignments[OnDemand] == nil || assignments[OnDemand].Cardinality() == 0 {
 			break
 		}
-		for _, action := range assignments[OnDemandStage].ToSlice() {
+		for _, action := range assignments[OnDemand].ToSlice() {
 			matched := false
-			// check if the on demand action output artifacts have actions
-			// in an activity stage that require their outputs.
 			for _, artifact := range action.OutputArtifacts {
-				if stages, ok := s.requiredInputs[artifact]; ok {
-					matched = true
-					stages := stages.ToSlice()
-					firstOccurance := stages[0]
-					for i := 1; i < len(stages); i++ {
-						if stages[i] < firstOccurance {
-							firstOccurance = stages[i]
-						}
+				stages := []Stage{}
+				requiredInputStages, ok := s.requiredInputs[artifact]
+				if ok {
+					stages = append(stages, requiredInputStages.ToSlice()...)
+				}
+				optionalInputStages, ok := s.optionalInputs[artifact]
+				if ok {
+					stages = append(stages, optionalInputStages.ToSlice()...)
+				}
+				if len(stages) == 0 {
+					break
+				}
+				matched = true
+				firstOccurance := stages[0]
+				for i := 1; i < len(stages); i++ {
+					if stages[i] < firstOccurance {
+						firstOccurance = stages[i]
 					}
-					// if the first dependency of the input is in the on demand
-					// stage, then we must wait until the next loop iteration
-					// for the dependant action to be assigned to a finite
-					// activity stage.
-					if firstOccurance == OnDemandStage {
-						// if the action is already in the unmatched list then
-						// the matching failed for two loop cycles.
-						// This means that the associated input could not be
-						// tranferred to to a finite activity stage and cannot
-						// be resolved.
-						if unmatchableWatchList.Contains(action) {
-							return fmt.Errorf("outputs for on-demand action '%s' cannot be resolved", action.Name)
-						}
-						// add the action to the watch list until the next loop
-						// cycle.
-						unmatchableWatchList.Add(action)
-						continue
+				}
+				if firstOccurance == OnDemand {
+					if unmatchableWatchList.Contains(action) {
+						return fmt.Errorf("outputs for on-demand action '%s' cannot be resolved", action.Name)
 					}
-					// transfer the action from the on demand stage to the
-					// required activity stage.
-					assignments[firstOccurance].Add(action)
-					assignments[OnDemandStage].Remove(action)
-					// it is possible for an on demand action to have inputs.
-					// transfer inputs along with the action to the appropriate
-					// stage and remove those inputs from the on demand stage
-					// since the action no longer exists there.
-					for _, artifact := range action.InputArtifacts {
-						s.requiredInputs[artifact].Remove(OnDemandStage)
-						s.requiredInputs[artifact].Add(firstOccurance)
-					}
+					unmatchableWatchList.Add(action)
+					continue
+				}
+				assignments[firstOccurance].Add(action)
+				assignments[OnDemand].Remove(action)
+				for _, artifact := range action.InputArtifacts {
+					s.requiredInputs[artifact].Remove(OnDemand)
+					s.requiredInputs[artifact].Add(firstOccurance)
 				}
 			}
 			if !matched {
-				err := fmt.Errorf("one or more outputs from on-demand action '%s' could not be matched to an action in a finite stage. this action will be excluded from the action plan", action.Name)
-				log.Info("", "err", err)
-				assignments[OnDemandStage].Remove(action)
+				assignments[OnDemand].Remove(action)
 			}
 		}
 	}
@@ -125,11 +110,15 @@ func (s *scheduler) sortActions(assignments map[Stage]mapset.Set[*Action]) (map[
 		stage := Stage(stageIndex)
 		if actions, ok := assignments[stage]; ok {
 			actionsWithUnresolvedInputs := mapset.NewSet[string]()
+			optionallyDeferredActions := mapset.NewSet[string]()
 			for {
 				startingCardinality := actions.Cardinality()
 			ActionLoop:
 				for _, action := range actions.ToSlice() {
-					if len(action.InputArtifacts) == 0 {
+					if len(action.OptionalInputArtifacts) > 0 {
+						optionallyDeferredActions.Add(action.Name)
+					}
+					if len(action.InputArtifacts) == 0 && len(action.OptionalInputArtifacts) == 0 {
 						sortedAssignments[stage] = append(sortedAssignments[stage], action)
 					} else {
 						for _, input := range action.InputArtifacts {
@@ -144,6 +133,17 @@ func (s *scheduler) sortActions(assignments map[Stage]mapset.Set[*Action]) (map[
 								continue ActionLoop
 							}
 						}
+						for _, input := range action.OptionalInputArtifacts {
+							var inputIsFulfilled bool
+							for _, output := range assignedActionOutputs {
+								if input == output {
+									inputIsFulfilled = true
+								}
+							}
+							if !inputIsFulfilled {
+								continue ActionLoop
+							}
+						}
 						sortedAssignments[stage] = append(sortedAssignments[stage], action)
 					}
 					assignedActionOutputs = append(assignedActionOutputs, action.OutputArtifacts...)
@@ -152,7 +152,20 @@ func (s *scheduler) sortActions(assignments map[Stage]mapset.Set[*Action]) (map[
 				if actions.Cardinality() == 0 {
 					break
 				} else if startingCardinality == actions.Cardinality() {
-					return nil, fmt.Errorf("the scheduler has detected unresolved inputs for the following actions: '%s'", strings.Join(actionsWithUnresolvedInputs.ToSlice(), ","))
+					// assign optionally deferred actions
+					hasUnresolvedActions := false
+					for _, action := range actions.ToSlice() {
+						if !optionallyDeferredActions.Contains(action.Name) {
+							hasUnresolvedActions = true
+						} else {
+							sortedAssignments[stage] = append(sortedAssignments[stage], action)
+							assignedActionOutputs = append(assignedActionOutputs, action.OutputArtifacts...)
+							actions.Remove(action)
+						}
+					}
+					if hasUnresolvedActions {
+						return nil, fmt.Errorf("the following action has inputs that cannot be resolved: '%s'", strings.Join(actionsWithUnresolvedInputs.ToSlice(), ","))
+					}
 				}
 			}
 		}

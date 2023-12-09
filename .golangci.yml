@@ -1,0 +1,39 @@
+issues:
+  exclude-rules:
+    - path: '(.+)_test\.go'
+      linters:
+        - funlen
+        - gosec
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - dogsled
+    - dupl
+    - errcheck
+    - exportloopref
+    - gocheckcompilerdirectives
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - revive
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace

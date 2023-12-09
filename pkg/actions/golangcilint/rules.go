@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	mapset "github.com/deckarep/golang-set/v2"
+	"github.com/trustacks/trustacks/pkg/actions/golang"
 	"github.com/trustacks/trustacks/pkg/engine"
 )
 
@@ -22,4 +23,8 @@ var GolangCILintConfigExistsRule engine.Rule = func(source string, _ engine.Coll
 		}
 	}
 	return fact, nil
+}
+
+func init() {
+	engine.AddToRuleset(&golang.GoModExistsRule, &GolangCILintConfigExistsRule)
 }

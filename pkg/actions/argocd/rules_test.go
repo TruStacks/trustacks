@@ -14,7 +14,7 @@ type argocdTestCollector struct {
 	results []string
 }
 
-func (c argocdTestCollector) Search(pattern string) []string {
+func (c argocdTestCollector) Search(_ string) []string {
 	return c.results
 }
 func TestArgoCDApplicationExistsRule(t *testing.T) {
@@ -31,7 +31,7 @@ func TestArgoCDApplicationExistsRule(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(d, "argo-app.yaml"), []byte(yml), 0744); err != nil {
+		if err := os.WriteFile(filepath.Join(d, "argo-app.yaml"), yml, 0744); err != nil {
 			t.Fatal(err)
 		}
 		collector := &argocdTestCollector{results: []string{filepath.Join(d, "argo-app.yaml")}}
@@ -59,7 +59,7 @@ func TestArgoCDApplicationExistsRule(t *testing.T) {
 		if err := os.MkdirAll(filepath.Join(d, "helm"), 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(d, "helm", "Chart.yaml"), []byte(yml), 0744); err != nil {
+		if err := os.WriteFile(filepath.Join(d, "helm", "Chart.yaml"), yml, 0744); err != nil {
 			t.Fatal(err)
 		}
 		collector := &argocdTestCollector{results: []string{filepath.Join(d, "helm", "Chart.yaml")}}

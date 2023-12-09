@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	mapset "github.com/deckarep/golang-set/v2"
+	"github.com/trustacks/trustacks/pkg/actions/golang"
 	"github.com/trustacks/trustacks/pkg/actions/javascript"
 	"github.com/trustacks/trustacks/pkg/engine"
 )
@@ -25,6 +26,6 @@ var SonarProjectPropertiesExistsRule engine.Rule = func(source string, collector
 }
 
 func init() {
-	engine.AddToRuleset(&javascript.PackageJsonExistsRule, &SonarProjectPropertiesExistsRule)
-
+	engine.AddToRuleset(&javascript.PackageJSONExistsRule, &SonarProjectPropertiesExistsRule)
+	engine.AddToRuleset(&golang.GoModExistsRule, &SonarProjectPropertiesExistsRule)
 }

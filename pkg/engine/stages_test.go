@@ -7,5 +7,5 @@ import (
 )
 
 func TestGetStage(t *testing.T) {
-	assert.Equal(t, GetStage(FeedbackStage), "feedback")
+	assert.Equal(t, GetStage(CommitStage), "commit")
 }

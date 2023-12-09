@@ -21,7 +21,7 @@ var pytestRunAction = &engine.Action{
 		}
 		return "python"
 	},
-	Stage: engine.FeedbackStage,
+	Stage: engine.CommitStage,
 	Script: func(container *dagger.Container, _ map[string]interface{}, utils *engine.ActionUtilities) error {
 		config := utils.GetConfig()
 		container = container.WithExec([]string{"apt", "update"})
@@ -36,7 +36,7 @@ var pytestRunAction = &engine.Action{
 		}
 		container = container.WithExec([]string{"pip", "install", "pytest"})
 		container = container.WithExec([]string{"pytest"})
-		_, err = container.Stdout(context.Background())
+		_, err = container.Sync(context.Background())
 		return err
 	},
 	AdmissionCriteria: []engine.Fact{PytestDependencyExistsFact},

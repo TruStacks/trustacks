@@ -29,10 +29,7 @@ var PytestDependencyExistsRule engine.Rule = func(source string, collector engin
 		if err != nil {
 			return fact, err
 		}
-		re, err := regexp.Compile(`import pytest`)
-		if err != nil {
-			return fact, err
-		}
+		re := regexp.MustCompile(`import pytest`)
 		if re.Match(content) {
 			hasImport = true
 			break

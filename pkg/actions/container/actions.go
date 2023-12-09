@@ -15,32 +15,47 @@ var containerBuildAction = &engine.Action{
 	DisplayName: "Container Build",
 	Description: "Build a container image from the source Containerfile or Dockerfile.",
 	Image:       func(_ *engine.Config) string { return "busybox" },
-	Stage:       engine.OnDemandStage,
+	Stage:       engine.OnDemand,
 	OutputArtifacts: []engine.Artifact{
 		engine.ContainerImageArtifact,
 	},
-	Script: func(container *dagger.Container, _ map[string]interface{}, utils *engine.ActionUtilities) error {
-		container = container.Directory("/src").DockerBuild()
-		return utils.ExportContainer(container, engine.ContainerImageArtifact)
+	OptionalInputArtifacts: []engine.Artifact{
+		engine.BuildArtifact,
 	},
-	AdmissionCriteria: []engine.Fact{ContainerfileHasNoDependenciesFact},
+	Script: func(container *dagger.Container, _ map[string]interface{}, utils *engine.ActionUtilities) error {
+		container, buildMount, err := utils.Mount(container, engine.BuildArtifact)
+		if err != nil && err != engine.ErrArtifactNotFound {
+			return err
+		} else if err == nil {
+			container = container.WithExec([]string{"cp", "-r", buildMount.Path(".build"), "./.build"})
+		}
+		container = container.Directory("/src").DockerBuild()
+		if err := utils.ExportContainer(container, engine.ContainerImageArtifact); err != nil {
+			return err
+		}
+		_, err = container.Sync(context.Background())
+		return err
+	},
+	AdmissionCriteria: []engine.Fact{ContainerfileHasPredictableDependenciesFact},
 }
 
-var containerCopyAction = &engine.Action{
-	Name:        "containerCopy",
+var containerPublishAction = &engine.Action{
+	Name:        "containerPublish",
 	DisplayName: "Container Publish",
 	Description: "Publish the container to a container registry.",
 	Image:       func(_ *engine.Config) string { return "alpine" },
-	Stage:       engine.PackageStage,
+	Stage:       engine.DeployStage,
 	InputArtifacts: []engine.Artifact{
 		engine.ContainerImageArtifact,
+	},
+	OptionalInputArtifacts: []engine.Artifact{
 		engine.SemanticVersionArtifact,
 	},
 	Script: func(container *dagger.Container, inputs map[string]interface{}, utils *engine.ActionUtilities) error {
 		args := struct {
-			CONTAINER_REGISTRY          string
-			CONTAINER_REGISTRY_USERNAME string
-			CONTAINER_REGISTRY_PASSWORD string
+			CONTAINER_REGISTRY          string //nolint:revive,stylecheck
+			CONTAINER_REGISTRY_USERNAME string //nolint:revive,stylecheck
+			CONTAINER_REGISTRY_PASSWORD string //nolint:revive,stylecheck
 		}{}
 		if err := mapstructure.Decode(inputs, &args); err != nil {
 			return err
@@ -60,9 +75,16 @@ var containerCopyAction = &engine.Action{
 				return err
 			}
 		}
-		_, err = container.Import(container.File(imageMount.Path("image.tar"))).
-			WithRegistryAuth(args.CONTAINER_REGISTRY, args.CONTAINER_REGISTRY_USERNAME, utils.SetSecret("registryPassword", args.CONTAINER_REGISTRY_PASSWORD)).
-			Publish(context.Background(), fmt.Sprintf("%s:%s", args.CONTAINER_REGISTRY, strings.ReplaceAll(version, "\n", "")))
+		container = container.Import(container.File(imageMount.Path("image.tar")))
+		container = container.WithRegistryAuth(
+			args.CONTAINER_REGISTRY,
+			args.CONTAINER_REGISTRY_USERNAME,
+			utils.SetSecret("registryPassword", args.CONTAINER_REGISTRY_PASSWORD),
+		)
+		_, err = container.Publish(
+			context.Background(),
+			fmt.Sprintf("%s:%s", args.CONTAINER_REGISTRY, strings.ReplaceAll(version, "\n", "")),
+		)
 		if err != nil {
 			return err
 		}
@@ -73,10 +95,10 @@ var containerCopyAction = &engine.Action{
 		engine.ContainerRegistryUsername,
 		engine.ContainerRegistryPassword,
 	},
-	AdmissionCriteria: []engine.Fact{ContainerfileHasNoDependenciesFact},
+	AdmissionCriteria: []engine.Fact{ContainerfileHasPredictableDependenciesFact},
 }
 
 func init() {
 	engine.RegisterAction(containerBuildAction)
-	engine.RegisterAction(containerCopyAction)
+	engine.RegisterAction(containerPublishAction)
 }

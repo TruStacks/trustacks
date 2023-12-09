@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPackageJsonExistsRule(t *testing.T) {
-	t.Run("PackageJsonExistsFact is true", func(t *testing.T) {
+func TestPackageJSONExistsRule(t *testing.T) {
+	t.Run("PackageJSONExistsFact is true", func(t *testing.T) {
 		d, err := os.MkdirTemp("", "test-src")
 		if err != nil {
 			t.Fatal(err)
@@ -18,29 +18,29 @@ func TestPackageJsonExistsRule(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(d, "package.json"), []byte(`{}`), 0744); err != nil {
 			t.Fatal(err)
 		}
-		fact, err := PackageJsonExistsRule(d, nil, nil)
+		fact, err := PackageJSONExistsRule(d, nil, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.Equal(t, fact, PackageJsonExistsFact)
+		assert.Equal(t, fact, PackageJSONExistsFact)
 	})
 
-	t.Run("PackageJsonExistsFact is false", func(t *testing.T) {
+	t.Run("PackageJSONExistsFact is false", func(t *testing.T) {
 		d, err := os.MkdirTemp("", "test-src")
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer os.RemoveAll(d)
-		fact, err := PackageJsonExistsRule(d, nil, nil)
+		fact, err := PackageJSONExistsRule(d, nil, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.NotEqual(t, fact, PackageJsonExistsFact)
+		assert.NotEqual(t, fact, PackageJSONExistsFact)
 	})
 }
 
-func TestPackageJsonVersionExistsRule(t *testing.T) {
-	t.Run("PackageJsonVersionExistsFact is true", func(t *testing.T) {
+func TestPackageJSONVersionExistsRule(t *testing.T) {
+	t.Run("PackageJSONVersionExistsFact is true", func(t *testing.T) {
 		d, err := os.MkdirTemp("", "test-src")
 		if err != nil {
 			t.Fatal(err)
@@ -49,14 +49,14 @@ func TestPackageJsonVersionExistsRule(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(d, "package.json"), []byte(`{"version": "0.0.42"}`), 0744); err != nil {
 			t.Fatal(err)
 		}
-		fact, err := PackageJsonVersionExistsRule(d, nil, nil)
+		fact, err := PackageJSONVersionExistsRule(d, nil, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.Equal(t, fact, PackageJsonVersionExistsFact)
+		assert.Equal(t, fact, PackageJSONVersionExistsFact)
 	})
 
-	t.Run("PackageJsonVersionExistsFact is false", func(t *testing.T) {
+	t.Run("PackageJSONVersionExistsFact is false", func(t *testing.T) {
 		d, err := os.MkdirTemp("", "test-src")
 		if err != nil {
 			t.Fatal(err)
@@ -65,10 +65,10 @@ func TestPackageJsonVersionExistsRule(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(d, "package.json"), []byte(`{}`), 0744); err != nil {
 			t.Fatal(err)
 		}
-		fact, err := PackageJsonVersionExistsRule(d, nil, nil)
+		fact, err := PackageJSONVersionExistsRule(d, nil, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.NotEqual(t, fact, PackageJsonVersionExistsFact)
+		assert.NotEqual(t, fact, PackageJSONVersionExistsFact)
 	})
 }
